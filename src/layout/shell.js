@@ -65,7 +65,7 @@ function foldedDisplay({ records, lastAction, smokeEncountered }) {
 }
 
 function unfoldedDisplay({ records, lastAction, smokeEncountered }) {
-  return `<div class="unfolded-display"><div class="unfolded-main"><div class="unfolded-room">${roomScene({ smokeEncountered })}</div>${focusPanel(records, lastAction)}${quickRecordBar(records)}</div>${statusPanel(records)}</div>`;
+  return `<div class="unfolded-display"><div class="unfolded-main"><div class="unfolded-room">${roomScene({ smokeEncountered })}</div>${quickRecordBar(records)}</div>${statusPanel(records)}</div>`;
 }
 
 function bottomNav() {

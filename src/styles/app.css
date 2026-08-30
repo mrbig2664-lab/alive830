@@ -36,8 +36,10 @@ img { max-width: 100%; }
 .screen-label { display: flex; justify-content: space-between; gap: 14px; min-width: 0; padding: 14px 8%; color: var(--paper); background-color: var(--ink); background-image: url('../../public/assets/material/frame-cta-black.png'); background-size: 100% 100%; font-family: var(--font-display); font-size: clamp(11px, 1.2vw, 16px); letter-spacing: .08em; white-space: nowrap; }
 .screen-label span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .unfolded-display { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 10px; min-width: 0; min-height: 0; height: 100%; padding: 10px; overflow: hidden; background: var(--paper); }
-.unfolded-main { display: grid; grid-template-rows: minmax(0, 1.15fr) minmax(112px, .32fr) minmax(170px, .44fr); gap: 0; min-width: 0; min-height: 0; width: 100%; overflow: hidden; }
-.unfolded-room, .unfolded-room .room-scene { min-height: 0; height: 100%; }
+.unfolded-main { display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; width: 100%; overflow: hidden; }
+.unfolded-room { flex: 0 0 auto; min-width: 0; }
+.unfolded-room .room-scene { height: auto; aspect-ratio: 1.34; }
+.unfolded-main .quick-records { min-height: 340px; }
 .room-scene { position: relative; overflow: hidden; aspect-ratio: 1.78; border: 9px solid transparent; border-image: url('../../public/assets/material/frame-panel.png') 28 fill / 9px / 0 stretch; background: #ddbf89; }
 .room-texture { position: absolute; width: 100%; pointer-events: none; }
 .wall-texture { inset: 0 0 25%; height: 75%; object-fit: cover; }
@@ -108,7 +110,7 @@ img { max-width: 100%; }
 .footer-caption { display: flex; justify-content: space-between; gap: 20px; align-items: baseline; padding-top: 24px; font-family: var(--font-display); } .footer-caption span { font-size: 25px; } .footer-caption small { letter-spacing: .07em; }
 
 [data-mode="folded"] .unfolded-display { display: none; }
-[data-mode="folded"] .folded-display { display: grid; grid-template-rows: minmax(0, 1.75fr) minmax(0, .65fr) minmax(60px, .45fr) minmax(48px, .35fr); gap: 10px; min-height: 0; height: 100%; padding: 10px; }
+[data-mode="folded"] .folded-display { display: grid; grid-template-rows: minmax(0, 1.2fr) minmax(112px, .4fr) minmax(62px, .3fr) minmax(48px, .18fr); gap: 10px; min-height: 0; height: 100%; padding: 10px; }
 [data-mode="folded"] .folded-scene { min-height: 0; }
 [data-mode="folded"] .folded-scene .room-scene { width: 100%; height: 100%; aspect-ratio: auto; max-height: none; }
 [data-mode="folded"] .folded-scene .room-label { top: 4%; left: 7%; }
@@ -125,7 +127,7 @@ img { max-width: 100%; }
 [data-mode="folded"] .folded-scene .smoke-asset { bottom: 14%; right: 4%; width: 24%; }
 [data-mode="folded"] .focus-panel { min-height: 0; margin-top: 0; }
 [data-mode="folded"] .focus-copy p { font-size: 12px; }
-[data-mode="folded"] .focus-meter { display: none; }
+[data-mode="folded"] .focus-meter { display: block; flex-basis: 150px; }
 .primary-action, .secondary-action { width: 100%; margin-top: 0; border: 0; font-weight: 950; }
 .primary-action { display: flex; justify-content: center; align-items: center; gap: 9px; min-height: 62px; padding: 10px 16px; color: var(--paper); background-color: var(--ink); border: 8px solid transparent; border-image: url('../../public/assets/material/frame-cta-black.png') 20 fill / 8px / 0 stretch; font-size: 20px; }
 .primary-action img { width: 25px; height: 25px; object-fit: contain; }
