@@ -44,6 +44,7 @@ test('first-screen layout and approved assets are present', async () => {
 test('GitHub Pages runtime keeps asset URLs repository-relative', async () => {
   const html = await readFile(join(root, 'index.html'), 'utf8');
   const css = await readFile(join(root, 'src/styles/app.css'), 'utf8');
+  const tokens = await readFile(join(root, 'src/styles/tokens.css'), 'utf8');
   const scene = await readFile(join(root, 'src/data/scene.js'), 'utf8');
   assert.doesNotMatch(html, /href="\/src\//);
   assert.doesNotMatch(html, /src="\/src\//);
@@ -54,6 +55,11 @@ test('GitHub Pages runtime keeps asset URLs repository-relative', async () => {
   assert.match(css, /aspect-ratio: 2248 \/ 2480/);
   assert.match(css, /aspect-ratio: 1140 \/ 2616/);
   assert.match(css, /\.unfolded-room \.room-scene \{ width: 100%; height: 100%; aspect-ratio: auto/);
+  assert.match(css, /grid-template-columns: minmax\(0, 2fr\) minmax\(0, 1fr\)/);
+  assert.match(css, /\.unfolded-display > \.quick-records \{ grid-column: 1 \/ -1; grid-row: 2/);
+  assert.match(css, /\.status-column \{ grid-column: 2; grid-row: 1;/);
+  assert.match(tokens, /--action-quick: 190px/);
+  assert.match(tokens, /--world-egg: \.65/);
 });
 
 test('no legacy runtime source is imported', async () => {

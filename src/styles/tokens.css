@@ -14,6 +14,43 @@
   --soft-shadow: 4px 5px 0 rgba(17, 17, 17, .18);
   --font-body: "Avenir Next", "PingFang SC", "Hiragino Sans GB", sans-serif;
   --font-display: Impact, "Arial Black", "Avenir Next Condensed", sans-serif;
+
+  /* Visual contract: the screen is composed as fixed game regions, not content-height cards. */
+  --screen-unfolded-world: 66%;
+  --screen-unfolded-quick: 18%;
+  --screen-unfolded-nav: 16%;
+  --screen-unfolded-content-fr: 84fr;
+  --screen-unfolded-world-fr: 78fr;
+  --screen-unfolded-quick-fr: 22fr;
+  --screen-folded-room: 40%;
+  --screen-folded-focus: 22%;
+  --screen-folded-actions: 23%;
+  --screen-folded-safe: 15%;
+  --screen-folded-room-fr: 40fr;
+  --screen-folded-focus-fr: 22fr;
+  --screen-folded-primary-fr: 14fr;
+  --screen-folded-secondary-fr: 9fr;
+
+  /* One resident scale system. ZhanZhan is the 1.00 reference. */
+  --world-zhan: 1;
+  --world-egg: .65;
+  --world-muscle: .58;
+  --world-liver: .48;
+  --world-smoke: .43;
+  --world-moon: .43;
+  --world-water: .38;
+  --world-seed-jar: .25;
+  --room-zhan-width: 24%;
+  --room-egg-width: 17%;
+  --room-smoke-width: 12%;
+  --record-resident-height: 118px;
+
+  /* Touch controls at the 2248px unfolded QA size. */
+  --action-quick: 190px;
+  --action-mood: 126px;
+  --action-primary: 132px;
+  --action-secondary: 102px;
+
   --type-section-title: clamp(44px, 3.5vw, 52px);
   --type-card-title: clamp(34px, 3vw, 40px);
   --type-primary: clamp(42px, 3.6vw, 52px);

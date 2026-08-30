@@ -44,7 +44,7 @@ function statusRows(records) {
 
 function actionCard(item, records) {
   const value = item.id === 'smoke' ? `${records.smoke} / 10` : item.id === 'move' ? `${records.move} min` : item.id === 'water' ? `${records.water} / 8` : records[item.id] ? `${records[item.id]} 次` : '—';
-  return `<button class="record-card accent-${item.accent}" data-action="${item.id}" type="button"><span class="record-plus">+</span><span class="record-label">${item.label}</span><span class="record-value">${value}</span>${item.character ? `<img src="${item.character}" alt="">` : ''}</button>`;
+  return `<button class="record-card record-${item.id} accent-${item.accent}" data-action="${item.id}" type="button"><span class="record-plus">+</span><span class="record-label">${item.label}</span><span class="record-value">${value}</span>${item.character ? `<img src="${item.character}" alt="">` : ''}</button>`;
 }
 
 function quickRecordBar(records) {
