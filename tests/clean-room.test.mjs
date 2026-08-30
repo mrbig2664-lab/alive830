@@ -65,8 +65,8 @@ test('GitHub Pages runtime keeps asset URLs repository-relative', async () => {
   assert.match(css, /grid-template-columns: minmax\(0, 2fr\) minmax\(0, 1fr\)/);
   assert.match(css, /\.unfolded-display > \.quick-records \{ grid-column: 1 \/ -1; grid-row: 2/);
   assert.match(css, /\.status-column \{ grid-column: 2; grid-row: 1;/);
-  assert.match(tokens, /--action-quick: 190px/);
-  assert.match(tokens, /--record-resident-height: 162px/);
+  assert.match(tokens, /--action-quick: 225px/);
+  assert.match(tokens, /--record-resident-height: 178px/);
   assert.match(tokens, /--screen-folded-room: 49%/);
   assert.match(tokens, /--world-egg: \.65/);
 });
@@ -91,6 +91,8 @@ test('render contract keeps the handheld loop visible', () => {
   assert.match(html, /LIFE SEEDS/);
   assert.match(html, /mood-good\.svg/);
   assert.match(html, /nav-house\.svg/);
+  assert.doesNotMatch(html, /今天，真实生活/);
+  assert.doesNotMatch(html, /Take a breath/);
   assert.match(html, /smoke-beast-encounter\.png/);
   assert.doesNotMatch(html, /focus-panel/);
   assert.doesNotMatch(html, /MAIN DISPLAY/);
@@ -107,8 +109,10 @@ test('render contract keeps the handheld loop visible', () => {
   assert.match(folded, /目标 ≤10支/);
   assert.match(folded, /primary-action/);
   assert.match(folded, /\+ 抽了一支/);
+  assert.match(folded, /cta-companion/);
   assert.match(folded, /secondary-action/);
   assert.match(folded, /记录其他/);
+  assert.match(folded, /secondary-plus/);
   assert.doesNotMatch(folded, /folded-actions/);
   assert.doesNotMatch(folded, /class="bottom-nav"/);
 });

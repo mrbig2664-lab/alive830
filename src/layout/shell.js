@@ -27,7 +27,6 @@ function roomScene({ smokeEncountered }) {
       <img class="room-asset egg-asset" src="${scene.assets.egg}" alt="神秘蛋">
       <img class="room-asset resident-asset" src="${scene.assets.resident}" alt="詹詹坐在房间里">
       ${smokeEncountered ? `<img class="room-asset smoke-asset" src="${scene.assets.smoke}" alt="烟雾兽出现">` : ''}
-      ${note('Take a breath.\n先住下吧。', 'room-note')}
     </div>`;
 }
 
@@ -50,7 +49,7 @@ function actionCard(item, records) {
 function quickRecordBar(records, className = '') {
   const cards = scene.actions.slice(0, 3).map((item) => actionCard(item, records)).join('');
   const other = '<button class="record-card accent-green other-card" data-action="food" type="button"><span class="record-plus">•••</span><span class="record-label">其它</span><span class="record-value">吃饭 / 睡眠 / 恢复</span></button>';
-  return `<section class="quick-records ${className}"><div class="section-heading"><h2>快速记录</h2><span>今天，真实生活</span></div><div class="quick-grid">${cards}${other}</div></section>`;
+  return `<section class="quick-records ${className}"><div class="section-heading"><h2>快速记录</h2></div><div class="quick-grid">${cards}${other}</div></section>`;
 }
 
 function focusPanel(records, lastAction) {
@@ -64,11 +63,11 @@ function foldedFocusPanel(records, lastAction) {
 }
 
 function statusPanel(records) {
-  return `<aside class="status-column"><section class="status-card"><div class="section-heading"><h2>今日状态</h2><span>8月27日</span></div>${statusRows(records)}</section><section class="mood-card"><h2>今天怎么样？</h2><div class="moods"><button type="button" class="mood good" aria-label="好"><img class="mood-face" src="${scene.assets.moodGood}" alt=""></button><button type="button" class="mood okay" aria-label="一般"><img class="mood-face" src="${scene.assets.moodOkay}" alt=""></button><button type="button" class="mood bad" aria-label="不好"><img class="mood-face" src="${scene.assets.moodBad}" alt=""></button></div><div class="mood-labels" aria-hidden="true"><span>好</span><span>一般</span><span>不好</span></div><div class="seed-chip"><img src="${scene.assets.plant}" alt=""><span><b>2</b> LIFE SEEDS<br><small>记录会慢慢变成世界。</small></span></div></section></aside>`;
+  return `<aside class="status-column"><section class="status-card"><div class="section-heading"><h2>今日状态</h2><span>8月27日</span></div>${statusRows(records)}</section><section class="mood-card"><h2>今天怎么样？</h2><div class="moods"><button type="button" class="mood good" aria-label="好"><img class="mood-face" src="${scene.assets.moodGood}" alt=""></button><button type="button" class="mood okay" aria-label="一般"><img class="mood-face" src="${scene.assets.moodOkay}" alt=""></button><button type="button" class="mood bad" aria-label="不好"><img class="mood-face" src="${scene.assets.moodBad}" alt=""></button></div><div class="mood-labels" aria-hidden="true"><span>好</span><span>一般</span><span>不好</span></div><div class="seed-chip"><img src="${scene.assets.plant}" alt=""><span><b>2</b> LIFE SEEDS</span></div></section></aside>`;
 }
 
 function foldedDisplay({ records, lastAction, smokeEncountered }) {
-  return `<div class="folded-display"><div class="folded-scene">${roomScene({ smokeEncountered })}</div>${foldedFocusPanel(records, lastAction)}<button class="primary-action" data-action="smoke" type="button"><img src="${scene.assets.smokeIcon}" alt="">+ 抽了一支</button><button class="secondary-action" data-action="food" type="button">＋ 记录其他</button></div>`;
+  return `<div class="folded-display"><div class="folded-scene">${roomScene({ smokeEncountered })}</div>${foldedFocusPanel(records, lastAction)}<button class="primary-action" data-action="smoke" type="button"><img class="cta-icon" src="${scene.assets.smokeIcon}" alt=""><span>+ 抽了一支</span><img class="cta-companion" src="${scene.assets.smoke}" alt="" aria-hidden="true"></button><button class="secondary-action" data-action="food" type="button"><span class="secondary-plus" aria-hidden="true">＋</span><span>记录其他</span></button></div>`;
 }
 
 function unfoldedDisplay({ records, lastAction, smokeEncountered }) {

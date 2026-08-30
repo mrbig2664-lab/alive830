@@ -18,8 +18,9 @@
   /* Visual contract: the screen is composed as fixed game regions, not content-height cards. */
   --screen-unfolded-world: 66%;
   --screen-unfolded-quick: 18%;
-  --screen-unfolded-nav: 16%;
-  --screen-unfolded-content-fr: 84fr;
+  --screen-unfolded-nav: 12%;
+  --screen-unfolded-content-fr: 88fr;
+  --screen-unfolded-nav-fr: 12fr;
   --screen-unfolded-world-fr: 78fr;
   --screen-unfolded-quick-fr: 22fr;
   --screen-folded-room: 49%;
@@ -42,10 +43,10 @@
   --room-zhan-width: 24%;
   --room-egg-width: 17%;
   --room-smoke-width: 12%;
-  --record-resident-height: 162px;
+  --record-resident-height: 178px;
 
   /* Touch controls at the 2248px unfolded QA size. */
-  --action-quick: 190px;
+  --action-quick: 225px;
   --action-mood: 110px;
   --action-primary: 132px;
   --action-secondary: 102px;
