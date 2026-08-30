@@ -71,12 +71,13 @@ test('render contract keeps the handheld loop visible', () => {
   });
   assert.match(html, /handheld-shell/);
   assert.match(html, /data-screen-mode="unfolded"/);
-  assert.match(html, /2248 × 2480/);
   assert.match(html, /ROOM ZERO/);
   assert.match(html, /快速记录/);
   assert.match(html, /LIFE SEEDS/);
   assert.match(html, /smoke-beast-encounter\.png/);
   assert.doesNotMatch(html, /focus-panel/);
+  assert.doesNotMatch(html, /MAIN DISPLAY/);
+  assert.match(html, /data-action="food"/);
   assert.doesNotMatch(html, /\\n/);
 
   const folded = renderShell({
@@ -86,5 +87,7 @@ test('render contract keeps the handheld loop visible', () => {
     smokeEncountered: true,
   });
   assert.match(folded, /data-screen-mode="folded"/);
-  assert.match(folded, /1140 × 2616/);
+  assert.match(folded, /目标 ≤10支/);
+  assert.match(folded, /\+ 抽了一支/);
+  assert.doesNotMatch(folded, /class="bottom-nav"/);
 });

@@ -48,7 +48,9 @@ function actionCard(item, records) {
 }
 
 function quickRecordBar(records) {
-  return `<section class="quick-records"><div class="section-heading"><h2>快速记录</h2><span>今天，真实生活</span></div><div class="quick-grid">${scene.actions.slice(0, 4).map((item) => actionCard(item, records)).join('')}</div><button class="other-record" data-action="food" type="button"><span>+</span>记录其它 <small>吃饭 / 睡眠 / 恢复</small></button></section>`;
+  const cards = scene.actions.slice(0, 3).map((item) => actionCard(item, records)).join('');
+  const other = '<button class="record-card accent-green other-card" data-action="food" type="button"><span class="record-plus">•••</span><span class="record-label">其它</span><span class="record-value">吃饭 / 睡眠 / 恢复</span></button>';
+  return `<section class="quick-records"><div class="section-heading"><h2>快速记录</h2><span>今天，真实生活</span></div><div class="quick-grid">${cards}${other}</div></section>`;
 }
 
 function focusPanel(records, lastAction) {
@@ -56,12 +58,17 @@ function focusPanel(records, lastAction) {
   return `<section class="focus-panel"><div class="focus-copy"><span class="mini-kicker">TODAY · 今天</span><h2>${scene.focus}</h2><p>${lastAction ? `刚刚记录了「${actionLabel}」，房间收到了。` : '先做一个小动作，世界会记住。'}</p></div><div class="focus-meter"><strong>${records.smoke}</strong><span>/ 10</span><div class="meter-track"><i style="width:${Math.min(records.smoke * 10, 100)}%"></i></div></div></section>`;
 }
 
+function foldedFocusPanel(records, lastAction) {
+  const actionLabel = lastAction ? action(lastAction).label : null;
+  return `<section class="focus-panel folded-focus"><div class="focus-copy"><span class="mini-kicker">TODAY · 今天</span><h2>${scene.focus}</h2><p>${actionLabel ? `刚刚记录了「${actionLabel}」。` : '不超过 10 支，先照顾好今天。'}</p></div><div class="focus-meter"><strong>${records.smoke}</strong><span>支</span><small>目标 ≤10支</small></div></section>`;
+}
+
 function statusPanel(records) {
   return `<aside class="status-column"><section class="status-card"><div class="section-heading"><h2>今日状态</h2><span>8月27日</span></div>${statusRows(records)}</section><section class="mood-card"><h2>今天怎么样？</h2><div class="moods"><button type="button" class="mood good">好</button><button type="button" class="mood okay">一般</button><button type="button" class="mood bad">不好</button></div><div class="seed-chip"><img src="${scene.assets.plant}" alt=""><span><b>2</b> LIFE SEEDS<br><small>记录会慢慢变成世界。</small></span></div></section></aside>`;
 }
 
 function foldedDisplay({ records, lastAction, smokeEncountered }) {
-  return `<div class="folded-display"><div class="folded-scene">${roomScene({ smokeEncountered })}</div>${focusPanel(records, lastAction)}<button class="primary-action" data-action="smoke" type="button"><img src="${scene.assets.smokeIcon}" alt="">+ 抽了一支</button><button class="secondary-action" data-action="food" type="button">+ 记录其它 <span>吃饭 / 睡眠 / 恢复</span></button></div>`;
+  return `<div class="folded-display"><div class="folded-scene">${roomScene({ smokeEncountered })}</div>${foldedFocusPanel(records, lastAction)}<button class="primary-action" data-action="smoke" type="button"><img src="${scene.assets.smokeIcon}" alt="">+ 抽了一支</button><button class="secondary-action" data-action="food" type="button">+ 记录其它 <span>吃饭 / 睡眠 / 恢复</span></button></div>`;
 }
 
 function unfoldedDisplay({ records, lastAction, smokeEncountered }) {
@@ -73,5 +80,5 @@ function bottomNav() {
 }
 
 export function renderShell({ mode, records, lastAction, smokeEncountered }) {
-  return `<div class="app-stage" data-mode="${mode}"><header class="brand-header"><div class="brand-lockup"><div class="brand-title">${scene.title}</div><div class="brand-subtitle">${scene.room} <span>·</span> DAILY LOOP</div></div><div class="brand-note">${note(scene.tagline, 'header-note')}<img src="${scene.assets.heart}" alt="" aria-hidden="true"></div><div class="mode-tabs" aria-label="掌机模式"><button data-mode-choice="folded" class="${mode === 'folded' ? 'is-active' : ''}" type="button">FOLDED<br><small>折叠行动</small></button><button data-mode-choice="unfolded" class="${mode === 'unfolded' ? 'is-active' : ''}" type="button">UNFOLDED<br><small>展开世界</small></button></div></header><section class="loop-strip"><span>LIVE</span><b>→</b><span>NOTICE</span><b>→</b><span>CHANGE</span><b>→</b><span>RETURN</span><img src="${scene.assets.heart}" alt="" aria-hidden="true"></section><section class="handheld-shell"><div class="screen-bezel" data-screen-mode="${mode}"><div class="screen-label"><span>${mode === 'folded' ? 'COVER DISPLAY' : 'MAIN DISPLAY'}</span><span>${mode === 'folded' ? '1140 × 2616' : '2248 × 2480'}</span></div>${mode === 'folded' ? foldedDisplay({ records, lastAction, smokeEncountered }) : unfoldedDisplay({ records, lastAction, smokeEncountered })}${bottomNav()}</div></section><footer class="footer-caption"><span>把自己，养回来。</span><small>ALIVE V4 · ROOM ZERO · ONE SMALL THING AT A TIME</small></footer></div>`;
+  return `<div class="app-stage" data-mode="${mode}"><header class="brand-header"><div class="brand-lockup"><div class="brand-title">${scene.title}</div><div class="brand-subtitle">${scene.room} <span>·</span> DAILY LOOP</div></div><div class="brand-note">${note(scene.tagline, 'header-note')}<img src="${scene.assets.heart}" alt="" aria-hidden="true"></div><div class="mode-tabs" aria-label="掌机模式"><button data-mode-choice="folded" class="${mode === 'folded' ? 'is-active' : ''}" type="button">FOLDED<br><small>折叠行动</small></button><button data-mode-choice="unfolded" class="${mode === 'unfolded' ? 'is-active' : ''}" type="button">UNFOLDED<br><small>展开世界</small></button></div></header><section class="loop-strip"><span>LIVE</span><b>→</b><span>NOTICE</span><b>→</b><span>CHANGE</span><b>→</b><span>RETURN</span><img src="${scene.assets.heart}" alt="" aria-hidden="true"></section><section class="handheld-shell"><div class="screen-bezel" data-screen-mode="${mode}" aria-label="${mode === 'folded' ? '折叠封面屏' : '展开主屏'}">${mode === 'folded' ? foldedDisplay({ records, lastAction, smokeEncountered }) : unfoldedDisplay({ records, lastAction, smokeEncountered })}${mode === 'unfolded' ? bottomNav() : ''}</div></section><footer class="footer-caption"><span>把自己，养回来。</span><small>ALIVE V4 · ROOM ZERO · ONE SMALL THING AT A TIME</small></footer></div>`;
 }
