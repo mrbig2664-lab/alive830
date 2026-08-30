@@ -22,13 +22,13 @@
   --screen-unfolded-content-fr: 84fr;
   --screen-unfolded-world-fr: 78fr;
   --screen-unfolded-quick-fr: 22fr;
-  --screen-folded-room: 40%;
-  --screen-folded-focus: 22%;
-  --screen-folded-actions: 23%;
-  --screen-folded-safe: 15%;
-  --screen-folded-room-fr: 40fr;
-  --screen-folded-focus-fr: 22fr;
-  --screen-folded-primary-fr: 14fr;
+  --screen-folded-room: 49%;
+  --screen-folded-focus: 20%;
+  --screen-folded-actions: 21%;
+  --screen-folded-safe: 10%;
+  --screen-folded-room-fr: 49fr;
+  --screen-folded-focus-fr: 20fr;
+  --screen-folded-primary-fr: 12fr;
   --screen-folded-secondary-fr: 9fr;
 
   /* One resident scale system. ZhanZhan is the 1.00 reference. */
@@ -43,11 +43,11 @@
   --room-zhan-width: 24%;
   --room-egg-width: 17%;
   --room-smoke-width: 12%;
-  --record-resident-height: 118px;
+  --record-resident-height: 162px;
 
   /* Touch controls at the 2248px unfolded QA size. */
   --action-quick: 190px;
-  --action-mood: 126px;
+  --action-mood: 110px;
   --action-primary: 132px;
   --action-secondary: 102px;
 

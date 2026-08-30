@@ -59,6 +59,8 @@ test('GitHub Pages runtime keeps asset URLs repository-relative', async () => {
   assert.match(css, /\.unfolded-display > \.quick-records \{ grid-column: 1 \/ -1; grid-row: 2/);
   assert.match(css, /\.status-column \{ grid-column: 2; grid-row: 1;/);
   assert.match(tokens, /--action-quick: 190px/);
+  assert.match(tokens, /--record-resident-height: 162px/);
+  assert.match(tokens, /--screen-folded-room: 49%/);
   assert.match(tokens, /--world-egg: \.65/);
 });
 
