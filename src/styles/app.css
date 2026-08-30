@@ -35,20 +35,19 @@ img { max-width: 100%; }
 .screen-bezel[data-screen-mode="unfolded"], .screen-bezel[data-screen-mode="folded"] { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
 .screen-label { display: flex; justify-content: space-between; gap: 14px; min-width: 0; padding: 14px 8%; color: var(--paper); background-color: var(--ink); background-image: url('../../public/assets/material/frame-cta-black.png'); background-size: 100% 100%; font-family: var(--font-display); font-size: clamp(11px, 1.2vw, 16px); letter-spacing: .08em; white-space: nowrap; }
 .screen-label span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.unfolded-display { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 18px; min-width: 0; min-height: 0; height: 100%; padding: 18px; overflow: hidden; background: var(--paper); }
-.unfolded-main { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 18px; min-width: 0; min-height: 0; width: 100%; overflow: hidden; }
-.unfolded-room { flex: 0 0 auto; min-width: 0; }
-.unfolded-room .room-scene { height: auto; aspect-ratio: 1.34; }
-.unfolded-main .quick-records { display: flex; flex-direction: column; min-height: 0; height: 100%; margin-top: 0; padding: 22px 24px; }
-.unfolded-main .quick-grid { flex: 1; min-height: 0; align-items: stretch; gap: 14px; }
-.unfolded-main .record-card { min-height: 0; padding: 24px; font-size: clamp(24px, 1.45vw, 38px); align-content: center; }
-.unfolded-main .record-plus { margin-right: 14px; font-size: clamp(42px, 2.3vw, 58px); }
-.unfolded-main .record-label { font-size: inherit; }
-.unfolded-main .record-value { font-size: clamp(20px, 1.05vw, 28px); }
-.unfolded-main .record-card img { right: 6px; bottom: 5px; width: 100px; max-height: 120px; }
-.unfolded-main .other-record { min-height: 112px; margin-top: 14px; padding: 18px 22px; font-size: clamp(22px, 1.2vw, 32px); }
-.unfolded-main .other-record span { font-size: clamp(32px, 1.8vw, 46px); }
-.unfolded-main .other-record small { font-size: clamp(16px, .85vw, 23px); }
+.unfolded-display { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1.3fr) minmax(220px, .4fr); gap: 18px; min-width: 0; min-height: 0; height: 100%; padding: 18px; overflow: hidden; background: var(--paper); }
+.unfolded-room { grid-column: 1; grid-row: 1; min-width: 0; min-height: 0; }
+.unfolded-room .room-scene { width: 100%; height: 100%; aspect-ratio: auto; }
+.unfolded-display > .quick-records { grid-column: 1; grid-row: 2; display: flex; flex-direction: column; min-height: 0; height: 100%; margin-top: 0; padding: 22px 24px; }
+.unfolded-display > .quick-records .quick-grid { flex: 1; min-height: 0; align-items: stretch; gap: 14px; }
+.unfolded-display > .quick-records .record-card { min-height: 0; padding: 24px; font-size: clamp(24px, 1.45vw, 38px); align-content: center; }
+.unfolded-display > .quick-records .record-plus { margin-right: 14px; font-size: clamp(42px, 2.3vw, 58px); }
+.unfolded-display > .quick-records .record-label { font-size: inherit; }
+.unfolded-display > .quick-records .record-value { font-size: clamp(20px, 1.05vw, 28px); }
+.unfolded-display > .quick-records .record-card img { right: 6px; bottom: 5px; width: 100px; max-height: 120px; }
+.unfolded-display > .quick-records .other-record { min-height: 112px; margin-top: 14px; padding: 18px 22px; font-size: clamp(22px, 1.2vw, 32px); }
+.unfolded-display > .quick-records .other-record span { font-size: clamp(32px, 1.8vw, 46px); }
+.unfolded-display > .quick-records .other-record small { font-size: clamp(16px, .85vw, 23px); }
 .room-scene { position: relative; overflow: hidden; aspect-ratio: 1.78; border: 9px solid transparent; border-image: url('../../public/assets/material/frame-panel.png') 28 fill / 9px / 0 stretch; background: #ddbf89; }
 .room-texture { position: absolute; width: 100%; pointer-events: none; }
 .wall-texture { inset: 0 0 25%; height: 75%; object-fit: cover; }
@@ -95,7 +94,7 @@ img { max-width: 100%; }
 .other-record { width: 100%; margin-top: 8px; padding: 10px 12px; border: 8px solid transparent; border-image: url('../../public/assets/material/frame-button-secondary.png') 20 fill / 8px / 0 stretch; background-color: transparent; font-weight: 900; text-align: left; }
 .other-record span { margin-right: 7px; font-family: var(--font-display); font-size: 24px; } .other-record small { margin-left: 8px; color: var(--muted); font-weight: 700; }
 
-.status-column { display: grid; grid-template-rows: minmax(0, 1.2fr) minmax(0, .8fr); align-content: stretch; gap: 10px; min-width: 0; width: 100%; height: 100%; overflow: hidden; }
+.status-column { grid-column: 2; grid-row: 1; display: grid; grid-template-rows: minmax(0, 1.2fr) minmax(0, .8fr); align-content: stretch; gap: 10px; min-width: 0; width: 100%; height: 100%; overflow: hidden; }
 .status-card, .mood-card, .seed-card { min-height: 0; height: 100%; padding: 24px 28px; border: 10px solid transparent; border-image: url('../../public/assets/material/frame-panel.png') 24 fill / 10px / 0 stretch; background-color: var(--paper); }
 .status-card { display: flex; flex-direction: column; }
 .status-row { display: flex; justify-content: space-between; gap: 9px; padding: 21px 0 18px; background-image: url('../../public/assets/material/divider-handdrawn.png'); background-position: center top; background-size: 100% 8px; background-repeat: no-repeat; font-size: clamp(16px, 1vw, 25px); }
@@ -150,7 +149,7 @@ img { max-width: 100%; }
 @media (max-width: 860px) {
   .brand-header { grid-template-columns: 1fr 1fr; gap: 18px; }
   .brand-note { grid-column: 1 / 2; } .mode-tabs { grid-column: 2 / 3; }
-  .unfolded-display { grid-template-columns: 1fr; } .status-column { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; } .status-card { grid-row: span 2; }
+  .unfolded-display { grid-template-columns: 1fr; grid-template-rows: auto auto auto; } .unfolded-room { grid-column: 1; grid-row: 1; } .unfolded-room .room-scene { height: auto; aspect-ratio: 1.34; } .status-column { grid-column: 1; grid-row: 2; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; height: auto; } .status-card { grid-row: span 2; } .unfolded-display > .quick-records { grid-column: 1; grid-row: 3; height: auto; }
 }
 @media (max-width: 600px) {
   .app-stage { padding: 16px 10px 30px; }

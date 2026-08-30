@@ -53,7 +53,7 @@ test('GitHub Pages runtime keeps asset URLs repository-relative', async () => {
   assert.match(css, /frame-cta-black\.png/);
   assert.match(css, /aspect-ratio: 2248 \/ 2480/);
   assert.match(css, /aspect-ratio: 1140 \/ 2616/);
-  assert.match(css, /\.unfolded-room \.room-scene \{ height: auto; aspect-ratio: 1\.34/);
+  assert.match(css, /\.unfolded-room \.room-scene \{ width: 100%; height: 100%; aspect-ratio: auto/);
 });
 
 test('no legacy runtime source is imported', async () => {
