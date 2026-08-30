@@ -33,13 +33,13 @@ function roomScene({ smokeEncountered }) {
 
 function statusRows(records) {
   const rows = [
-    ['抽烟', `${records.smoke} / 10 支`, 'red'],
-    ['喝酒', records.drink ? `${records.drink} 次` : 'Dry', 'orange'],
-    ['运动', `${records.move} min`, 'yellow'],
-    ['睡眠', '23:48 上床', 'purple'],
-    ['喝水', `${records.water} / 8 杯`, 'blue'],
+    ['抽烟', `${records.smoke} / 10 支`, 'red', scene.assets.smokeIcon],
+    ['喝酒', records.drink ? `${records.drink} 次` : 'Dry', 'orange', scene.assets.liver],
+    ['运动', `${records.move} min`, 'yellow', scene.assets.muscle],
+    ['睡眠', '23:48 上床', 'purple', null],
+    ['喝水', `${records.water} / 8 杯`, 'blue', scene.assets.water],
   ];
-  return rows.map(([label, value, color]) => `<div class="status-row"><span><i class="status-mark ${color}"></i>${label}</span><strong>${value}</strong></div>`).join('');
+  return rows.map(([label, value, color, icon]) => `<div class="status-row"><span>${icon ? `<img class="status-icon" src="${icon}" alt="">` : `<i class="status-mark ${color}"></i>`}${label}</span><strong>${value}</strong></div>`).join('');
 }
 
 function actionCard(item, records) {

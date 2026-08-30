@@ -14,4 +14,11 @@
   --soft-shadow: 4px 5px 0 rgba(17, 17, 17, .18);
   --font-body: "Avenir Next", "PingFang SC", "Hiragino Sans GB", sans-serif;
   --font-display: Impact, "Arial Black", "Avenir Next Condensed", sans-serif;
+  --type-section-title: clamp(44px, 3.5vw, 52px);
+  --type-card-title: clamp(34px, 3vw, 40px);
+  --type-primary: clamp(42px, 3.6vw, 52px);
+  --type-body: clamp(28px, 2.6vw, 32px);
+  --type-secondary: clamp(22px, 2.1vw, 26px);
+  --type-button: clamp(30px, 2.8vw, 36px);
+  --type-nav: clamp(24px, 2.2vw, 28px);
 }
