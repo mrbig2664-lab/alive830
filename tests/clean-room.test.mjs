@@ -51,7 +51,7 @@ test('GitHub Pages runtime keeps asset URLs repository-relative', async () => {
   assert.match(css, /frame-panel\.png/);
   assert.match(css, /frame-button-secondary\.png/);
   assert.match(css, /frame-cta-black\.png/);
-  assert.match(css, /aspect-ratio: 2480 \/ 2248/);
+  assert.match(css, /aspect-ratio: 2248 \/ 2480/);
   assert.match(css, /aspect-ratio: 1140 \/ 2616/);
   assert.match(css, /\.unfolded-room \.room-scene \{ height: auto; aspect-ratio: 1\.34/);
 });
@@ -71,10 +71,20 @@ test('render contract keeps the handheld loop visible', () => {
   });
   assert.match(html, /handheld-shell/);
   assert.match(html, /data-screen-mode="unfolded"/);
+  assert.match(html, /2248 × 2480/);
   assert.match(html, /ROOM ZERO/);
   assert.match(html, /快速记录/);
   assert.match(html, /LIFE SEEDS/);
   assert.match(html, /smoke-beast-encounter\.png/);
   assert.doesNotMatch(html, /focus-panel/);
   assert.doesNotMatch(html, /\\n/);
+
+  const folded = renderShell({
+    mode: 'folded',
+    records: { smoke: 7, drink: 0, move: 60, water: 6, food: 0 },
+    lastAction: null,
+    smokeEncountered: true,
+  });
+  assert.match(folded, /data-screen-mode="folded"/);
+  assert.match(folded, /1140 × 2616/);
 });
