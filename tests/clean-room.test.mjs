@@ -71,4 +71,5 @@ test('render contract keeps the handheld loop visible', () => {
   assert.match(html, /快速记录/);
   assert.match(html, /LIFE SEEDS/);
   assert.match(html, /smoke-beast-encounter\.png/);
+  assert.doesNotMatch(html, /\\n/);
 });

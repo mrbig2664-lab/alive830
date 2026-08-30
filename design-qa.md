@@ -1,10 +1,10 @@
 # ALIVE V4 clean-room · first-screen visual QA
 
-final result: passed
+visual review: ready for user sign-off
 
 Reference: `/Users/Jenny/Desktop/alive排版.png` plus the supplied `alive 01–05.png` and `kit1–9.png` visual kits.
 
-Captured states:
+Captured states (redo4):
 
 - 390×844 folded cover viewport: `outputs/qa/folded-390x844.png`
 - 1140×2616 folded cover viewport: `outputs/qa/folded-1140x2616.png`
@@ -20,5 +20,7 @@ Checks completed:
 - Entry points and asset references are repository-relative so a GitHub Pages project URL can load the app on mobile.
 - Mode switching and the five first-stage record actions are interactive; state remains intentionally in memory until the persistence phase.
 - Automated tests: 5/5 passed.
+
+Current review note: GitHub publication is intentionally paused until the visual version is signed off.
 
 Follow-up notes for Phase 2: add append-only event records, Undo, Check-in, Settlement, and versioned local persistence without changing this layout contract.

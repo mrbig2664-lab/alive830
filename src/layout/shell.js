@@ -27,7 +27,7 @@ function roomScene({ smokeEncountered }) {
       <img class="room-asset egg-asset" src="${scene.assets.egg}" alt="神秘蛋">
       <img class="room-asset resident-asset" src="${scene.assets.resident}" alt="詹詹坐在房间里">
       ${smokeEncountered ? `<img class="room-asset smoke-asset" src="${scene.assets.smoke}" alt="烟雾兽出现">` : ''}
-      ${note('Take a breath.\\n先住下吧。', 'room-note')}
+      ${note('Take a breath.\n先住下吧。', 'room-note')}
     </div>`;
 }
 
