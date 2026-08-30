@@ -1,0 +1,17 @@
+:root {
+  --paper: #f7f0df;
+  --paper-shadow: #d6c4a6;
+  --ink: #111111;
+  --muted: #5c5549;
+  --yellow: #ffd234;
+  --red: #e94e36;
+  --green: #68a838;
+  --blue: #4e8bd5;
+  --orange: #e98d35;
+  --purple: #8475a9;
+  --rule: 2px solid var(--ink);
+  --heavy-shadow: 7px 8px 0 var(--ink);
+  --soft-shadow: 4px 5px 0 rgba(17, 17, 17, .18);
+  --font-body: "Avenir Next", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --font-display: Impact, "Arial Black", "Avenir Next Condensed", sans-serif;
+}
