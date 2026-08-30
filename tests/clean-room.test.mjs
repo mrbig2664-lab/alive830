@@ -51,6 +51,8 @@ test('GitHub Pages runtime keeps asset URLs repository-relative', async () => {
   assert.match(css, /frame-panel\.png/);
   assert.match(css, /frame-button-secondary\.png/);
   assert.match(css, /frame-cta-black\.png/);
+  assert.match(css, /aspect-ratio: 2480 \/ 2248/);
+  assert.match(css, /aspect-ratio: 1140 \/ 2616/);
 });
 
 test('no legacy runtime source is imported', async () => {
@@ -67,6 +69,7 @@ test('render contract keeps the handheld loop visible', () => {
     smokeEncountered: true,
   });
   assert.match(html, /handheld-shell/);
+  assert.match(html, /data-screen-mode="unfolded"/);
   assert.match(html, /ROOM ZERO/);
   assert.match(html, /快速记录/);
   assert.match(html, /LIFE SEEDS/);
