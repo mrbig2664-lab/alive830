@@ -24,6 +24,13 @@ export const scene = {
     tapeRed: './public/assets/ui/tape-red.png',
     smokeIcon: './public/assets/ui/smoke-icon.png',
     speech: './public/assets/ui/speech-bubble.png',
+    moodGood: './public/assets/ui/mood-good.svg',
+    moodOkay: './public/assets/ui/mood-okay.svg',
+    moodBad: './public/assets/ui/mood-bad.svg',
+    navHouse: './public/assets/ui/nav-house.svg',
+    navSearch: './public/assets/ui/nav-search.svg',
+    navBook: './public/assets/ui/nav-book.svg',
+    navPerson: './public/assets/ui/nav-person.svg',
   },
   actions: [
     { id: 'smoke', label: '抽烟', detail: '记录一支', accent: 'red', icon: './public/assets/ui/smoke-icon.png', character: './public/assets/characters/smoke-beast-encounter.png' },
