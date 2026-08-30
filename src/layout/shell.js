@@ -47,10 +47,10 @@ function actionCard(item, records) {
   return `<button class="record-card record-${item.id} accent-${item.accent}" data-action="${item.id}" type="button"><span class="record-plus">+</span><span class="record-label">${item.label}</span><span class="record-value">${value}</span>${item.character ? `<img src="${item.character}" alt="">` : ''}</button>`;
 }
 
-function quickRecordBar(records) {
+function quickRecordBar(records, className = '') {
   const cards = scene.actions.slice(0, 3).map((item) => actionCard(item, records)).join('');
   const other = '<button class="record-card accent-green other-card" data-action="food" type="button"><span class="record-plus">•••</span><span class="record-label">其它</span><span class="record-value">吃饭 / 睡眠 / 恢复</span></button>';
-  return `<section class="quick-records"><div class="section-heading"><h2>快速记录</h2><span>今天，真实生活</span></div><div class="quick-grid">${cards}${other}</div></section>`;
+  return `<section class="quick-records ${className}"><div class="section-heading"><h2>快速记录</h2><span>今天，真实生活</span></div><div class="quick-grid">${cards}${other}</div></section>`;
 }
 
 function focusPanel(records, lastAction) {
@@ -64,11 +64,11 @@ function foldedFocusPanel(records, lastAction) {
 }
 
 function statusPanel(records) {
-  return `<aside class="status-column"><section class="status-card"><div class="section-heading"><h2>今日状态</h2><span>8月27日</span></div>${statusRows(records)}</section><section class="mood-card"><h2>今天怎么样？</h2><div class="moods"><button type="button" class="mood good">好</button><button type="button" class="mood okay">一般</button><button type="button" class="mood bad">不好</button></div><div class="seed-chip"><img src="${scene.assets.plant}" alt=""><span><b>2</b> LIFE SEEDS<br><small>记录会慢慢变成世界。</small></span></div></section></aside>`;
+  return `<aside class="status-column"><section class="status-card"><div class="section-heading"><h2>今日状态</h2><span>8月27日</span></div>${statusRows(records)}</section><section class="mood-card"><h2>今天怎么样？</h2><div class="moods"><button type="button" class="mood good" aria-label="好"><span class="mood-face" aria-hidden="true">🙂</span><span class="mood-label">好</span></button><button type="button" class="mood okay" aria-label="一般"><span class="mood-face" aria-hidden="true">😐</span><span class="mood-label">一般</span></button><button type="button" class="mood bad" aria-label="不好"><span class="mood-face" aria-hidden="true">☹️</span><span class="mood-label">不好</span></button></div><div class="seed-chip"><img src="${scene.assets.plant}" alt=""><span><b>2</b> LIFE SEEDS<br><small>记录会慢慢变成世界。</small></span></div></section></aside>`;
 }
 
 function foldedDisplay({ records, lastAction, smokeEncountered }) {
-  return `<div class="folded-display"><div class="folded-scene">${roomScene({ smokeEncountered })}</div>${foldedFocusPanel(records, lastAction)}<button class="primary-action" data-action="smoke" type="button"><img src="${scene.assets.smokeIcon}" alt="">+ 抽了一支</button><button class="secondary-action" data-action="food" type="button">+ 记录其它 <span>吃饭 / 睡眠 / 恢复</span></button></div>`;
+  return `<div class="folded-display"><div class="folded-scene">${roomScene({ smokeEncountered })}</div>${foldedFocusPanel(records, lastAction)}${quickRecordBar(records, 'folded-actions')}</div>`;
 }
 
 function unfoldedDisplay({ records, lastAction, smokeEncountered }) {
@@ -76,7 +76,7 @@ function unfoldedDisplay({ records, lastAction, smokeEncountered }) {
 }
 
 function bottomNav() {
-  return `<nav class="bottom-nav" aria-label="主导航"><button class="nav-item is-active" type="button"><span class="nav-icon house"></span>房间</button><button class="nav-item" type="button"><span class="nav-icon discover"></span>发现</button><button class="nav-item" type="button"><span class="nav-icon story"></span>故事</button><button class="nav-item" type="button"><span class="nav-icon me"></span>我的</button></nav>`;
+  return `<nav class="bottom-nav" aria-label="主导航"><button class="nav-item is-active" type="button"><span class="nav-icon house" aria-hidden="true"></span><span class="nav-label">房间</span></button><button class="nav-item" type="button"><span class="nav-icon discover" aria-hidden="true"></span><span class="nav-label">发现</span></button><button class="nav-item" type="button"><span class="nav-icon story" aria-hidden="true"></span><span class="nav-label">故事</span></button><button class="nav-item" type="button"><span class="nav-icon me" aria-hidden="true"></span><span class="nav-label">我的</span></button></nav>`;
 }
 
 export function renderShell({ mode, records, lastAction, smokeEncountered }) {

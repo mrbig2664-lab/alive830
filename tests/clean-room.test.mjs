@@ -61,6 +61,7 @@ test('GitHub Pages runtime keeps asset URLs repository-relative', async () => {
   assert.match(tokens, /--action-quick: 190px/);
   assert.match(tokens, /--record-resident-height: 162px/);
   assert.match(tokens, /--screen-folded-room: 49%/);
+  assert.match(tokens, /--screen-folded-actions-fr: 21fr/);
   assert.match(tokens, /--world-egg: \.65/);
 });
 
@@ -96,6 +97,12 @@ test('render contract keeps the handheld loop visible', () => {
   });
   assert.match(folded, /data-screen-mode="folded"/);
   assert.match(folded, /目标 ≤10支/);
-  assert.match(folded, /\+ 抽了一支/);
+  assert.match(folded, /folded-actions/);
+  assert.match(folded, /record-smoke/);
+  assert.match(folded, /喝酒/);
+  assert.match(folded, /运动/);
+  assert.match(folded, /其它/);
+  assert.doesNotMatch(folded, /primary-action/);
+  assert.doesNotMatch(folded, /secondary-action/);
   assert.doesNotMatch(folded, /class="bottom-nav"/);
 });

@@ -28,8 +28,7 @@
   --screen-folded-safe: 10%;
   --screen-folded-room-fr: 49fr;
   --screen-folded-focus-fr: 20fr;
-  --screen-folded-primary-fr: 12fr;
-  --screen-folded-secondary-fr: 9fr;
+  --screen-folded-actions-fr: 21fr;
 
   /* One resident scale system. ZhanZhan is the 1.00 reference. */
   --world-zhan: 1;
