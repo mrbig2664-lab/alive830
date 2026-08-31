@@ -1,0 +1,11 @@
+{
+  "name": "alive-v4-clean-room-zero",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node tools/dev-server.mjs",
+    "preview": "node tools/dev-server.mjs",
+    "test": "node --test"
+  }
+}
