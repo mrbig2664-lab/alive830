@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { access, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { renderShell } from '../src/layout/shell.js';
+import { renderAppViewport, renderShell } from '../src/layout/shell.js';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 
@@ -12,6 +12,23 @@ test('clean-room runtime owns its entry points', async () => {
   assert.equal(packageJson.name, 'alive-v4-clean-room-zero');
   assert.equal(packageJson.scripts.dev, 'node tools/dev-server.mjs');
   assert.equal(packageJson.scripts.test, 'node --test');
+  await access(join(root, 'qa/device-preview/index.html'));
+});
+
+test('real app route is shell-free while QA route keeps the presentation shell', async () => {
+  const real = renderAppViewport({
+    mode: 'unfolded',
+    records: { smoke: 7, drink: 0, move: 60, water: 6, food: 0 },
+    smokeEncountered: true,
+  });
+  assert.match(real, /class="app-viewport"/);
+  assert.match(real, /data-experience="real"/);
+  assert.match(real, /class="bottom-nav"/);
+  assert.doesNotMatch(real, /app-stage|handheld-shell|brand-header|mode-tabs|loop-strip/);
+
+  const app = await readFile(join(root, 'src/app.js'), 'utf8');
+  assert.match(app, /path\.endsWith\('\/qa\/device-preview'\)/);
+  assert.match(app, /detectPosture/);
 });
 
 test('first-screen layout and approved assets are present', async () => {
@@ -96,7 +113,7 @@ test('render contract keeps the handheld loop visible', () => {
   assert.match(html, /smoke-beast-encounter\.png/);
   assert.doesNotMatch(html, /focus-panel/);
   assert.doesNotMatch(html, /MAIN DISPLAY/);
-  assert.match(html, /data-action="food"/);
+  assert.match(html, /data-action="other-log"/);
   assert.doesNotMatch(html, /\\n/);
 
   const folded = renderShell({

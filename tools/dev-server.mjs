@@ -4,7 +4,7 @@ import { extname, normalize, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-const host = process.env.HOST || '127.0.0.1';
+const host = process.env.HOST || '0.0.0.0';
 const port = Number(process.env.PORT || 4173);
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -18,10 +18,22 @@ const contentTypes = {
 const server = createServer(async (request, response) => {
   const requestPath = decodeURIComponent((request.url || '/').split('?')[0]);
   const safePath = normalize(requestPath).replace(/^\.\.(?:[\\/]|$)/, '');
-  const filePath = join(root, safePath === '/' ? 'index.html' : safePath.slice(1));
+  const requestedFile = join(root, safePath === '/' ? 'index.html' : safePath.slice(1));
+  const candidates = [requestedFile, join(requestedFile, 'index.html')];
 
   try {
-    const body = await readFile(filePath);
+    let body = null;
+    let filePath = requestedFile;
+    for (const candidate of candidates) {
+      try {
+        body = await readFile(candidate);
+        filePath = candidate;
+        break;
+      } catch {
+        // Try the directory index for routes such as /qa/device-preview.
+      }
+    }
+    if (!body) throw new Error('Not found');
     response.writeHead(200, {
       'Content-Type': contentTypes[extname(filePath)] || 'application/octet-stream',
       'Cache-Control': 'no-store',
