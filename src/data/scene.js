@@ -15,6 +15,7 @@ export const scene = {
     smoke: './public/assets/characters/smoke-beast-encounter.png',
     liver: './public/assets/characters/liver-normal.png',
     muscle: './public/assets/characters/muscle-normal.png',
+    moon: './public/assets/characters/moon-sleepy.png',
     water: './public/assets/characters/water-normal.png',
     egg: './public/assets/world/egg-still.png',
     plant: './public/assets/world/plant-stage-b.png',
