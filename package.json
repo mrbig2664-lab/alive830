@@ -6,6 +6,6 @@
   "scripts": {
     "dev": "node tools/dev-server.mjs",
     "preview": "node tools/dev-server.mjs",
-    "test": "node --test"
+    "test": "node --test tests/*.mjs"
   }
 }

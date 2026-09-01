@@ -13,7 +13,9 @@ export function localDateKey(date = new Date(), timezone = TIMEZONE) {
 }
 
 export function localTime(date = new Date(), timezone = TIMEZONE) {
-  return new Intl.DateTimeFormat('zh-CN', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hour12: false }).format(date);
+  const value = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(value.getTime())) return '—';
+  return new Intl.DateTimeFormat('zh-CN', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hour12: false }).format(value);
 }
 
 export function dateLabel(dateKey, timezone = TIMEZONE) {
@@ -25,8 +27,15 @@ export function activeSmokeEvents(state, dateKey) {
   const corrections = new Set(state.events.filter(event => event.type === 'smokeCorrection' && event.targetEventId).map(event => event.targetEventId));
   return state.events.filter(event => event.type === 'smoke' && event.localDate === dateKey && !event.tombstone && !corrections.has(event.id));
 }
-export function smokeCount(state, dateKey) { return activeSmokeEvents(state, dateKey).length; }
-export function lastSmokeEvent(state, dateKey) { return activeSmokeEvents(state, dateKey).sort((a, b) => a.occurredAt.localeCompare(b.occurredAt)).at(-1) || null; }
+export function smokeHistory(state, dateKey) { return activeSmokeEvents(state, dateKey).sort((a, b) => (a.occurredAt || a.createdAt || '').localeCompare(b.occurredAt || b.createdAt || '')); }
+export function smokeCount(state, dateKey) { return smokeHistory(state, dateKey).length; }
+export function lastSmokeEvent(state, dateKey) { return smokeHistory(state, dateKey).at(-1) || null; }
+export function activeLifeEvents(state, dateKey, type) {
+  return state.events.filter(event => event.type === type && event.localDate === dateKey && !event.tombstone).sort((a, b) => (a.occurredAt || a.createdAt || '').localeCompare(b.occurredAt || b.createdAt || ''));
+}
+export function lifeEventCount(state, dateKey, type) { return activeLifeEvents(state, dateKey, type).reduce((total, event) => total + Number(event.quantity || 1), 0); }
+export function exerciseMinutes(state, dateKey) { return activeLifeEvents(state, dateKey, 'exercise').reduce((total, event) => total + Number(event.durationMinutes || 0), 0); }
+export function latestLifeEvent(state, dateKey, type) { return activeLifeEvents(state, dateKey, type).at(-1) || null; }
 export function currentCheckin(state, dateKey) { return getRecord(state, `checkin:${dateKey}`); }
 export function currentSettlement(state, dateKey) { return getRecord(state, `settlement:${dateKey}`); }
 export function currentEncounter(state) { return getRecord(state, 'encounter:smokeBeast'); }
@@ -71,6 +80,12 @@ export function createLifeRecord(state, dateKey, type, extra = {}) {
   const record = { key: `${type}:${dateKey}:${now}`, id: `${type}-${now}`, type, localDate: dateKey, occurredAt: now, timezone: state.timezone, source: 'quickLog', ruleVersion: RULE_VERSION, ...extra };
   upsertRecord(state, record);
   return record;
+}
+export function createLifeEvent(state, dateKey, type, extra = {}) {
+  const now = new Date().toISOString();
+  const event = { id: createId(type), clientEventId: createId('client'), userId: state.userId, type, localDate: dateKey, occurredAt: now, timezone: state.timezone, source: 'quickLog', createdAt: now, updatedAt: now, ruleVersion: RULE_VERSION, tombstone: false, syncStatus: 'pending', ...extra };
+  state.events.push(event);
+  return event;
 }
 
 export function allocateLifeSeed(state, dateKey, target) {

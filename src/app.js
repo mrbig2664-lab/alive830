@@ -1,12 +1,13 @@
-import { renderAppViewport, renderShell } from './layout/shell.js';
+import { renderAppViewport, renderShell, smokeHistoryDrawer } from './layout/shell.js';
 import { createStore, getRecord, upsertRecord } from './state/store.js';
 import {
-  TIMEZONE, activeSmokeEvents, allocateLifeSeed, currentCheckin, currentEncounter, currentFocus,
-  currentSeedLedger, currentSettlement, createLifeRecord, createSmokeCorrection, createSmokeEvent,
+  TIMEZONE, activeLifeEvents, allocateLifeSeed, currentCheckin, currentEncounter, currentFocus,
+  currentSeedLedger, currentSettlement, createLifeEvent, createSmokeCorrection, createSmokeEvent,
   dailySeedReward, deriveAir, ensureDailySeeds, ensureFirstEncounter, ensureFocus, finalizeLifeSeeds,
-  hasLifeRecord, localDateKey, settlementSummary, smokeCount
+  localDateKey, localTime, settlementSummary, smokeCount, smokeHistory
 } from './state/domain.js';
 import { scene } from './data/scene.js';
+import { placeResidents } from './data/residents.js';
 
 const app = document.querySelector('#app');
 const store = createStore(TIMEZONE);
@@ -18,35 +19,45 @@ const detectPosture = () => (window.innerWidth / Math.max(window.innerHeight, 1)
 let mode = queryMode === 'folded' || queryMode === 'unfolded' ? queryMode : detectPosture();
 let state = null;
 let currentDate = localDateKey(new Date(), TIMEZONE);
-let ui = { sheet: null, draft: null, showSettlement: false, undoTargetId: null, toast: null };
+let ui = { sheet: null, draft: null, showSettlement: false, undoTargetId: null, toast: null, reaction: null };
 let toastTimer;
 let undoTimer;
+let reactionTimer;
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[char]));
 const dayRecords = type => state.records.filter(record => record.type === type && record.localDate === currentDate && !record.tombstone);
+const dayEvents = type => activeLifeEvents(state, currentDate, type);
+const projectedEvents = (eventType, legacyType) => {
+  return [...dayEvents(eventType), ...dayRecords(legacyType)].sort((a, b) => (a.occurredAt || '').localeCompare(b.occurredAt || ''));
+};
 const focus = () => currentFocus(state, currentDate);
 const checkin = () => currentCheckin(state, currentDate);
 
 function viewRecords() {
-  const move = dayRecords('moveEvent').reduce((total, record) => total + Number(record.durationMinutes || 0), 0);
-  const sleep = dayRecords('sleepLog').at(-1);
+  const drinks = projectedEvents('drink', 'drinkDaily');
+  const moves = projectedEvents('exercise', 'moveEvent');
+  const waters = projectedEvents('water', 'waterEvent');
+  const sleep = projectedEvents('sleep_start', 'sleepLog').at(-1);
   return {
     smoke: smokeCount(state, currentDate),
-    drink: dayRecords('drinkDaily').length,
-    move,
-    water: dayRecords('waterEvent').length,
+    drink: drinks.reduce((total, event) => total + Number(event.quantity || 1), 0),
+    move: moves.reduce((total, event) => total + Number(event.durationMinutes || 0), 0),
+    water: waters.reduce((total, event) => total + Number(event.quantity || 1), 0),
     food: dayRecords('foodLog').length,
-    sleep: sleep?.bedtime ? `${sleep.bedtime} 上床` : '—'
+    sleep: sleep?.bedtime ? `${sleep.bedtime} 上床` : sleep?.occurredAt ? `${localTime(sleep.occurredAt, TIMEZONE)} 上床` : '—'
   };
 }
 
 function residentView() {
-  const residents = [];
-  const realRecords = type => dayRecords(type).filter(record => record.source !== 'previewSeed');
-  if (realRecords('drinkDaily').length) residents.push({ id: 'liver', asset: scene.assets.liver, alt: '肝肝' });
-  if (realRecords('moveEvent').length) residents.push({ id: 'muscle', asset: scene.assets.muscle, alt: '肌肉仔' });
-  if (realRecords('waterEvent').length) residents.push({ id: 'water', asset: scene.assets.water, alt: '水滴仔' });
-  return residents.slice(0, 2);
+  const candidates = [];
+  if (dayEvents('sleep_start').length) candidates.push({ id: 'moon', asset: scene.assets.moon, alt: '月亮仔' });
+  if (dayEvents('drink').length || dayRecords('drinkDaily').some(record => record.source !== 'previewSeed')) candidates.push({ id: 'liver', asset: scene.assets.liver, alt: '肝肝' });
+  if (dayEvents('exercise').length || dayRecords('moveEvent').some(record => record.source !== 'previewSeed')) candidates.push({ id: 'muscle', asset: scene.assets.muscle, alt: '肌肉仔' });
+  if (dayEvents('water').length || dayRecords('waterEvent').some(record => record.source !== 'previewSeed')) candidates.push({ id: 'water', asset: scene.assets.water, alt: '水滴仔' });
+  const prioritized = ui.reaction && candidates.some(candidate => candidate.id === ui.reaction)
+    ? [candidates.find(candidate => candidate.id === ui.reaction), ...candidates.filter(candidate => candidate.id !== ui.reaction)]
+    : candidates;
+  return placeResidents(prioritized).map(resident => ({ ...resident, reaction: ui.reaction === resident.id }));
 }
 
 function viewModel() {
@@ -55,14 +66,15 @@ function viewModel() {
   return {
     mode,
     records: viewRecords(),
-    lastAction: null,
     smokeEncountered: Boolean(currentEncounter(state)),
     target: Number(focus().target || 10),
     mood,
     seedBalance: Number(state.world.lifeSeeds || 0) + Number(ledger?.remaining || 0),
     plantAsset: scene.assets.plant,
     eggAsset: scene.assets.egg,
-    residents: residentView()
+    residents: residentView(),
+    smokeHistory: smokeHistory(state, currentDate).map(event => ({ ...event, time: localTime(event.occurredAt || event.createdAt, TIMEZONE) })),
+    reaction: ui.reaction
   };
 }
 
@@ -73,10 +85,18 @@ function showToast(message, action = null) {
   toastTimer = setTimeout(() => { ui.toast = null; render(); }, 3200);
 }
 
+function showFeedback(character, message, action = null) {
+  clearTimeout(reactionTimer);
+  ui.reaction = character;
+  showToast(message, action);
+  reactionTimer = setTimeout(() => { ui.reaction = null; render(); }, 1800);
+}
+
 function renderSheet() {
   if (!ui.sheet) return '';
+  if (ui.sheet === 'smoke-history') return smokeHistoryDrawer(viewModel().smokeHistory);
   if (ui.sheet === 'other') {
-    return `<section class="interaction-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"><button class="sheet-close" data-action="close-sheet" aria-label="关闭">×</button><span class="sheet-kicker">QUICK LOG · 轻轻记一下</span><h2 id="sheet-title">还想记点别的？</h2><p>不用完整记录，今天有发生就好。</p><div class="other-log-grid"><button data-action="simple-log" data-log-type="waterEvent">💧 喝水了</button><button data-action="simple-log" data-log-type="drinkDaily">🍷 喝酒</button><button data-action="simple-log" data-log-type="moveEvent">🏃 动了一下</button><button data-action="simple-log" data-log-type="sleepLog">🌙 准备睡</button></div><button class="secondary-button" data-action="checkin">今晚记身体状态</button></section>`;
+    return `<section class="interaction-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"><button class="sheet-close" data-action="close-sheet" aria-label="关闭">×</button><span class="sheet-kicker">QUICK LOG · 轻轻记一下</span><h2 id="sheet-title">还想记点别的？</h2><p>不用完整记录，今天有发生就好。</p><div class="other-log-grid"><button data-action="simple-log" data-log-type="water">💧 喝水了</button><button data-action="simple-log" data-log-type="drink">🍷 喝酒</button><button data-action="simple-log" data-log-type="exercise">🏃 动了一下</button><button data-action="simple-log" data-log-type="sleep_start">🌙 准备睡</button></div><button class="secondary-button" data-action="checkin">今晚记身体状态</button></section>`;
   }
   const draft = ui.draft;
   const scale = (key, label) => `<div class="scale-row"><span>${label}</span><div>${[1,2,3,4,5].map(value => `<button class="scale-choice ${draft[key] === value ? 'selected' : ''}" data-checkin-key="${key}" data-checkin-value="${value}">${value}</button>`).join('')}</div></div>`;
@@ -116,7 +136,7 @@ async function handleSmoke() {
     draft.world.airState = deriveAir(draft, currentDate);
   });
   ui.undoTargetId = created.id;
-  showToast('记下了。', 'undo');
+  showFeedback('smoke', '记下了。', 'undo');
   clearTimeout(undoTimer);
   undoTimer = setTimeout(() => { ui.undoTargetId = null; }, 5000);
 }
@@ -126,15 +146,27 @@ async function handleUndo() {
   if (!target) return;
   await updateState(draft => { createSmokeCorrection(draft, target); draft.world.airState = deriveAir(draft, currentDate); });
   ui.undoTargetId = null;
-  showToast('撤销了。这条记录已经被纠正。');
+  showFeedback('smoke', '撤销了。这条记录已经被纠正。');
 }
 
 async function handleSimpleLog(type) {
+  const definitions = {
+    drink: { character: 'liver', message: '肝肝收到了。', extra: { quantity: 1, unit: '杯' } },
+    water: { character: 'water', message: '水滴仔收到一杯。', extra: { quantity: 1, unit: '杯' } },
+    exercise: { character: 'muscle', message: '肌肉仔有活力！', extra: { durationMinutes: 30, unit: 'min' } },
+    sleep_start: { character: 'moon', message: '月亮收到了，晚安。', extra: { bedtime: localTime(new Date(), TIMEZONE) } }
+  };
+  const definition = definitions[type];
+  if (!definition) return;
   await updateState(draft => {
-    if (type === 'waterEvent' || !hasLifeRecord(draft, currentDate, type)) createLifeRecord(draft, currentDate, type, type === 'moveEvent' ? { durationMinutes: 30 } : type === 'sleepLog' ? { bedtime: '23:48' } : {});
+    createLifeEvent(draft, currentDate, type, definition.extra);
+    if (type === 'sleep_start') {
+      draft.world.restState = 'bedtime';
+      draft.world.lastSleepStart = new Date().toISOString();
+    }
   });
   ui.sheet = null;
-  showToast('记下了。');
+  showFeedback(definition.character, definition.message);
 }
 
 async function handleMood(mood) {
@@ -143,7 +175,7 @@ async function handleMood(mood) {
     const existing = currentCheckin(draft, currentDate) || {};
     upsertRecord(draft, { key: `checkin:${currentDate}`, type: 'bodyCheckIn', id: `checkin-${currentDate}`, localDate: currentDate, energy: existing.energy || values[mood], skin: existing.skin || 3, puffiness: existing.puffiness || 3, bodyFeel: existing.bodyFeel || values[mood], food: existing.food || '正常', mood, ruleVersion: 'slice01-v1' });
   });
-  showToast(mood === 'good' ? '收到了，今天不错。' : mood === 'bad' ? '知道了，先照顾自己。' : '收到了，慢慢来。');
+  showFeedback('zhanzhan', mood === 'good' ? '收到了，今天不错。' : mood === 'bad' ? '知道了，先照顾自己。' : '收到了，慢慢来。');
 }
 
 async function submitCheckin() {
@@ -161,7 +193,7 @@ async function submitCheckin() {
   ui.draft = null;
   ui.showSettlement = true;
   render();
-  showToast('结算好了。还有种子在等你。');
+  showFeedback('zhanzhan', '结算好了。还有种子在等你。');
 }
 
 async function handleNurture(target) {
@@ -191,9 +223,11 @@ document.addEventListener('click', async event => {
   const action = button.dataset.action;
   if (action === 'smoke') { await handleSmoke(); return; }
   if (action === 'undo') { await handleUndo(); return; }
-  if (action === 'drink') { await handleSimpleLog('drinkDaily'); return; }
-  if (action === 'move') { await handleSimpleLog('moveEvent'); return; }
-  if (action === 'water') { await handleSimpleLog('waterEvent'); return; }
+  if (action === 'smoke-history') { ui.sheet = 'smoke-history'; ui.showSettlement = false; render(); return; }
+  if (action === 'simple-log') { await handleSimpleLog(button.dataset.logType); return; }
+  if (action === 'drink') { await handleSimpleLog('drink'); return; }
+  if (action === 'move') { await handleSimpleLog('exercise'); return; }
+  if (action === 'water') { await handleSimpleLog('water'); return; }
   if (action === 'other-log') { ui.sheet = 'other'; ui.showSettlement = false; render(); return; }
   if (action === 'checkin') { openCheckin(); return; }
   if (action === 'submit-checkin') { await submitCheckin(); return; }
@@ -202,6 +236,14 @@ document.addEventListener('click', async event => {
   if (action === 'finish-nurture') { await finishNurture(); return; }
   if (action === 'home' || action === 'close-sheet' || action === 'close-settlement') { ui.sheet = null; ui.draft = null; ui.showSettlement = false; render(); return; }
   if (action === 'not-ready') { showToast('其它房间还在长。'); }
+});
+
+document.addEventListener('keydown', event => {
+  const trigger = event.target.closest?.('[data-action="smoke-history"]');
+  if (!trigger || !['Enter', ' '].includes(event.key)) return;
+  event.preventDefault();
+  ui.sheet = 'smoke-history';
+  render();
 });
 
 window.addEventListener('resize', () => {

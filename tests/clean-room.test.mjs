@@ -11,7 +11,7 @@ test('clean-room runtime owns its entry points', async () => {
   const packageJson = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
   assert.equal(packageJson.name, 'alive-v4-clean-room-zero');
   assert.equal(packageJson.scripts.dev, 'node tools/dev-server.mjs');
-  assert.equal(packageJson.scripts.test, 'node --test');
+  assert.equal(packageJson.scripts.test, 'node --test tests/*.mjs');
   await access(join(root, 'qa/device-preview/index.html'));
 });
 

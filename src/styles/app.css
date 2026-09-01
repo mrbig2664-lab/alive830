@@ -173,6 +173,15 @@ img { max-width: 100%; }
 .room-companion-liver { right: 13%; bottom: 11%; width: 11%; }
 .room-companion-muscle { right: 24%; bottom: 10%; width: 14%; }
 .room-companion-water { right: 4%; bottom: 10%; width: 9%; }
+.room-anchor-resident_rug_back_left { left: 56%; right: auto; bottom: 10%; width: 11%; }
+.room-anchor-resident_rug_back_right { right: 4%; bottom: 10%; width: 10%; }
+.room-anchor-resident_bedside { left: 25%; right: auto; bottom: 10%; width: 10%; }
+.room-anchor-resident_table { right: 13%; bottom: 11%; width: 11%; }
+.is-reacting { animation: resident-reaction .55s ease-in-out 2; transform-origin: bottom center; }
+@keyframes resident-reaction { 50% { transform: translateY(-5px) scale(1.05); } }
+.smoke-history-list { display: grid; gap: 10px; margin: 20px 0 0; padding: 0; list-style: none; }
+.smoke-history-item { display: flex; justify-content: space-between; padding: 14px 4px; border-bottom: 2px solid rgba(17,17,17,.25); font-size: var(--type-body); }
+.smoke-history-empty { padding: 18px 4px; color: var(--muted); font-size: var(--type-body); }
 .interaction-backdrop { position: fixed; inset: 0; z-index: 80; background: rgba(17,17,17,.46); }
 .interaction-sheet { position: fixed; z-index: 81; left: 50%; bottom: 22px; width: min(760px, calc(100vw - 32px)); max-height: min(88vh, 980px); overflow: auto; transform: translateX(-50%); padding: 34px; border: 10px solid transparent; border-image: url('../../public/assets/material/frame-panel.png') 24 fill / 10px / 0 stretch; background: var(--paper); box-shadow: var(--heavy-shadow); }
 .interaction-sheet h2 { margin: 8px 0 12px; font-size: clamp(32px, 5vw, 52px); }
