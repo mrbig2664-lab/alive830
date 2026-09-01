@@ -1,4 +1,4 @@
-import { scene } from './scene.js';
+import { scene } from '../data/scene.js';
 
 const action = (id) => scene.actions.find((item) => item.id === id);
 
@@ -8,8 +8,8 @@ function note(text, className = '') { return `<div class="paper-note ${className
 function roomScene({ smokeEncountered, residents = [], plantAsset = scene.assets.plant, eggAsset = scene.assets.egg }) {
   const companions = residents.map((resident) => `<img class="room-asset room-companion room-companion-${resident.id}" src="${resident.asset}" alt="${resident.alt}" aria-hidden="true">`).join('');
   return `<div class="room-scene" aria-label="Room Zero 房间世界">
-    <img class="room-texture wall-texture" src="./material/texture-wall.png" alt="">
-    <img class="room-texture floor-texture" src="./material/texture-floor.png" alt="">
+    <img class="room-texture wall-texture" src="./public/assets/material/texture-wall.png" alt="">
+    <img class="room-texture floor-texture" src="./public/assets/material/texture-floor.png" alt="">
     <span class="room-label">${scene.room}</span>
     <img class="room-asset lamp-asset" src="${scene.assets.lamp}" alt="吊灯">
     <img class="room-asset window-asset" src="${scene.assets.window}" alt="窗户">
@@ -31,7 +31,7 @@ function statusRows(records, target = 10) {
     ['抽烟', `${records.smoke} / ${target} 支`, 'red', scene.assets.smokeIcon],
     ['喝酒', records.drink ? `${records.drink} 次` : 'Dry', 'orange', scene.assets.liver],
     ['运动', `${records.move} min`, 'yellow', scene.assets.muscle],
-    ['睡眠', records.sleep || '—', 'purple', null],
+    ['睡眠', records.sleep || '—', 'purple', scene.assets.moon],
     ['喝水', `${records.water} / 8 杯`, 'blue', scene.assets.water],
   ];
   return rows.map(([label, value, color, icon]) => `<div class="status-row"><span>${icon ? `<img class="status-icon" src="${icon}" alt="">` : `<i class="status-mark ${color}"></i>`}${label}</span><strong>${value}</strong></div>`).join('');
@@ -72,4 +72,13 @@ function bottomNav() {
 export function renderShell({ mode, records, smokeEncountered, target = 10, mood = null, seedBalance = 0, plantAsset = scene.assets.plant, eggAsset = scene.assets.egg, residents = [] }) {
   const display = mode === 'folded' ? foldedDisplay({ records, smokeEncountered, target, plantAsset, eggAsset }) : unfoldedDisplay({ records, smokeEncountered, target, mood, seedBalance, plantAsset, eggAsset, residents });
   return `<div class="app-stage" data-mode="${mode}"><header class="brand-header"><div class="brand-lockup"><div class="brand-title">${scene.title}</div><div class="brand-subtitle">${scene.room} <span>·</span> DAILY LOOP</div></div><div class="brand-note">${note(scene.tagline, 'header-note')}<img src="${scene.assets.heart}" alt="" aria-hidden="true"></div><div class="mode-tabs" aria-label="掌机模式"><button data-mode-choice="folded" class="${mode === 'folded' ? 'is-active' : ''}" type="button">FOLDED<br><small>折叠行动</small></button><button data-mode-choice="unfolded" class="${mode === 'unfolded' ? 'is-active' : ''}" type="button">UNFOLDED<br><small>展开世界</small></button></div></header><section class="loop-strip"><span>LIVE</span><b>→</b><span>NOTICE</span><b>→</b><span>CHANGE</span><b>→</b><span>RETURN</span><img src="${scene.assets.heart}" alt="" aria-hidden="true"></section><section class="handheld-shell"><div class="screen-bezel" data-screen-mode="${mode}" aria-label="${mode === 'folded' ? '折叠封面屏' : '展开主屏'}">${display}${mode === 'unfolded' ? bottomNav() : ''}</div></section><footer class="footer-caption"><span>把自己，养回来。</span><small>ALIVE V4 · ROOM ZERO · ONE SMALL THING AT A TIME</small></footer></div>`;
+}
+
+// The production app intentionally contains only the approved screen UI. The
+// presentation shell above remains available to the separate QA route.
+export function renderAppViewport({ mode, records, smokeEncountered, target = 10, mood = null, seedBalance = 0, plantAsset = scene.assets.plant, eggAsset = scene.assets.egg, residents = [] }) {
+  const display = mode === 'folded'
+    ? foldedDisplay({ records, smokeEncountered, target, plantAsset, eggAsset })
+    : unfoldedDisplay({ records, smokeEncountered, target, mood, seedBalance, plantAsset, eggAsset, residents });
+  return `<main class="app-viewport" data-experience="real" data-mode="${mode}" data-screen-mode="${mode}" aria-label="${mode === 'folded' ? '折叠行动模式' : '展开世界模式'}">${display}${mode === 'unfolded' ? bottomNav() : ''}</main>`;
 }
