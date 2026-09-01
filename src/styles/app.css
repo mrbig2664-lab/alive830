@@ -822,7 +822,7 @@ body[data-experience="real"] .app-viewport[data-mode="unfolded"] .mood-card {
 
 body[data-experience="real"] .app-viewport[data-mode="unfolded"] .status-card h2,
 body[data-experience="real"] .app-viewport[data-mode="unfolded"] .mood-card h2 {
-  font-size: clamp(20px, 2.8vw, 44px);
+  font-size: clamp(17px, 2.3vw, 36px);
   line-height: 1;
 }
 
@@ -837,7 +837,7 @@ body[data-experience="real"] .app-viewport[data-mode="unfolded"] .status-card .s
 body[data-experience="real"] .app-viewport[data-mode="unfolded"] .status-card .status-row {
   gap: clamp(3px, .7vw, 10px);
   padding: clamp(2px, .55vw, 8px) 0;
-  font-size: clamp(16px, 2.1vw, 34px);
+  font-size: clamp(15px, 1.9vw, 31px);
 }
 
 body[data-experience="real"] .app-viewport[data-mode="unfolded"] .status-row span {
@@ -847,7 +847,7 @@ body[data-experience="real"] .app-viewport[data-mode="unfolded"] .status-row spa
 
 body[data-experience="real"] .app-viewport[data-mode="unfolded"] .status-row strong {
   min-width: 0;
-  font-size: clamp(17px, 2.4vw, 38px);
+  font-size: clamp(16px, 2.2vw, 35px);
   white-space: nowrap;
 }
 
@@ -866,7 +866,7 @@ body[data-experience="real"] .app-viewport[data-mode="unfolded"] .mood-labels {
 }
 
 body[data-experience="real"] .app-viewport[data-mode="unfolded"] .mood-face {
-  width: clamp(34px, 7vw, 106px);
+  width: clamp(28px, 5.4vw, 82px);
 }
 
 body[data-experience="real"] .app-viewport[data-mode="unfolded"] .mood-labels {
@@ -909,7 +909,7 @@ body[data-experience="real"] .app-viewport[data-mode="unfolded"] .unfolded-displ
 }
 
 body[data-experience="real"] .app-viewport[data-mode="unfolded"] .unfolded-display > .quick-records .section-heading h2 {
-  font-size: clamp(18px, 2.6vw, 36px);
+  font-size: clamp(16px, 2.2vw, 30px);
   line-height: 1;
 }
 
