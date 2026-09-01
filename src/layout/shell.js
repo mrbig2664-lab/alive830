@@ -31,7 +31,7 @@ function statusRows(records, target = 10) {
     ['抽烟', `${records.smoke} / ${target} 支`, 'red', scene.assets.smokeIcon],
     ['喝酒', records.drink ? `${records.drink} 次` : 'Dry', 'orange', scene.assets.liver],
     ['运动', `${records.move} min`, 'yellow', scene.assets.muscle],
-    ['睡眠', records.sleep || '—', 'purple', null],
+    ['睡眠', records.sleep || '—', 'purple', scene.assets.moon],
     ['喝水', `${records.water} / 8 杯`, 'blue', scene.assets.water],
   ];
   return rows.map(([label, value, color, icon]) => `<div class="status-row"><span>${icon ? `<img class="status-icon" src="${icon}" alt="">` : `<i class="status-mark ${color}"></i>`}${label}</span><strong>${value}</strong></div>`).join('');
