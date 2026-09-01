@@ -320,3 +320,285 @@ body[data-experience="real"] .app-viewport .folded-display {
     min-height: 0;
   }
 }
+
+/*
+ * Real-device scale contract.
+ *
+ * The QA boards are rendered at device-pixel dimensions, while a phone lays
+ * this same composition out in a much smaller CSS viewport. Keep the visual
+ * hierarchy, assets, and grid intact, but give the real app its own compact
+ * type/control tokens so DPR does not turn the UI into a poster-sized crop.
+ */
+@media (max-width: 860px) {
+  body[data-experience="real"] {
+    --type-section-title: clamp(18px, 5.8vw, 25px);
+    --type-card-title: clamp(16px, 5vw, 22px);
+    --type-primary: clamp(20px, 6.2vw, 27px);
+    --type-body: clamp(14px, 4vw, 18px);
+    --type-secondary: clamp(12px, 3.5vw, 16px);
+    --type-button: clamp(15px, 4.4vw, 19px);
+    --type-nav: clamp(13px, 3.8vw, 17px);
+    --action-quick: clamp(68px, 18vw, 102px);
+    --action-mood: clamp(48px, 14vw, 68px);
+    --action-primary: clamp(78px, 22vw, 106px);
+    --action-secondary: clamp(58px, 16vw, 82px);
+    --record-resident-height: clamp(42px, 17vw, 72px);
+  }
+
+  /* Folded: keep the room as the hero and make the action stack fit one screen. */
+  body[data-experience="real"] .app-viewport[data-mode="folded"] .folded-display {
+    grid-template-rows: 50fr 20fr 17fr 8fr;
+    gap: 0;
+    padding: 5px 5px 3%;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="folded"] .room-scene {
+    border-width: 5px;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="folded"] .room-label {
+    top: 4%;
+    left: 7%;
+    padding: 7px 10px;
+    font-size: clamp(10px, 3.2vw, 14px);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="folded"] .folded-focus {
+    gap: 8px;
+    padding: 11px 13px;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="folded"] .folded-focus .mini-kicker {
+    margin-bottom: 3px;
+    font-size: clamp(9px, 2.7vw, 12px);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="folded"] .folded-focus .focus-copy {
+    min-width: 0;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="folded"] .folded-focus .focus-copy h2 {
+    font-size: clamp(20px, 5.8vw, 26px);
+    line-height: 1.08;
+    white-space: nowrap;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="folded"] .folded-focus .focus-copy p {
+    margin-top: 4px;
+    font-size: clamp(11px, 3.2vw, 15px);
+    line-height: 1.15;
+    white-space: nowrap;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="folded"] .folded-focus .focus-meter {
+    flex: 0 0 31%;
+    min-width: 0;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="folded"] .folded-focus .focus-meter strong {
+    font-size: clamp(46px, 14vw, 64px);
+    line-height: .8;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="folded"] .folded-focus .focus-meter span {
+    font-size: clamp(16px, 4.6vw, 21px);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="folded"] .folded-focus .focus-meter small {
+    font-size: clamp(10px, 2.9vw, 13px);
+    white-space: nowrap;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="folded"] .folded-focus .meter-track {
+    height: 6px;
+    margin-top: 5px;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="folded"] .primary-action {
+    gap: 8px;
+    padding: 7px 10px;
+    border-width: 5px;
+    font-size: clamp(22px, 6.6vw, 29px);
+    white-space: nowrap;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="folded"] .primary-action .cta-icon {
+    width: clamp(24px, 7.3vw, 34px);
+    height: clamp(24px, 7.3vw, 34px);
+    flex: 0 0 auto;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="folded"] .primary-action .cta-companion {
+    right: 3%;
+    bottom: -4%;
+    width: clamp(36px, 10.5vw, 50px);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="folded"] .secondary-action {
+    padding: 6px 10px;
+    border-width: 5px;
+    font-size: clamp(17px, 5vw, 22px);
+    white-space: nowrap;
+  }
+
+  /* Unfolded: preserve Room/HUD/Quick Record/Nav, but scale content to the CSS viewport. */
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] {
+    grid-template-rows: minmax(0, 88fr) minmax(0, 12fr);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .unfolded-display {
+    grid-template-rows: minmax(0, 78fr) minmax(0, 22fr);
+    gap: 6px;
+    padding: 6px;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .room-scene {
+    border-width: 5px;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .room-label {
+    padding: 7px 10px;
+    font-size: clamp(10px, 3.2vw, 14px);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .status-column {
+    gap: 6px;
+    grid-template-rows: minmax(0, 1.45fr) minmax(0, .55fr);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .status-card,
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .mood-card {
+    padding: 8px 8px;
+    border-width: 4px;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .status-card h2,
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .mood-card h2 {
+    font-size: clamp(17px, 5vw, 22px);
+    line-height: 1.05;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .status-card .section-heading {
+    margin-bottom: 3px;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .status-card .section-heading span {
+    font-size: clamp(10px, 2.8vw, 13px);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .status-card .status-row {
+    gap: 2px;
+    padding: 3px 0;
+    font-size: clamp(10px, 2.8vw, 13px);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .status-row span {
+    gap: 2px;
+    min-width: 0;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .status-row strong {
+    min-width: 0;
+    font-size: clamp(10px, 3vw, 13px);
+    white-space: nowrap;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .status-icon {
+    width: clamp(16px, 4.2vw, 21px);
+    height: clamp(16px, 4.2vw, 21px);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .mood-card h2 {
+    margin-bottom: 5px;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .mood-card .moods,
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .mood-labels {
+    gap: 2px;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .mood-face {
+    width: clamp(28px, 8vw, 40px);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .mood-labels {
+    margin-top: 3px;
+    font-size: clamp(11px, 3.4vw, 15px);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .mood-card .seed-chip {
+    gap: 4px;
+    margin-top: 4px;
+    padding-top: 4px;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .mood-card .seed-chip img {
+    width: 20px;
+    height: 24px;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .mood-card .seed-chip b {
+    font-size: clamp(16px, 4.5vw, 20px);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .mood-card .seed-chip span {
+    font-size: clamp(9px, 2.7vw, 12px);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] > .quick-records {
+    gap: 0;
+    padding: 8px 8px 6px;
+    border-width: 5px;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] > .quick-records .section-heading {
+    margin-bottom: 5px;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] > .quick-records .section-heading h2 {
+    font-size: clamp(18px, 5.4vw, 24px);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] > .quick-records .quick-grid {
+    gap: 5px;
+    flex-basis: var(--action-quick);
+    min-height: var(--action-quick);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] > .quick-records .record-card {
+    min-height: var(--action-quick);
+    padding: 8px 7px;
+    border-width: 5px;
+    font-size: clamp(15px, 4.3vw, 19px);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] > .quick-records .record-plus {
+    margin-right: 4px;
+    font-size: clamp(19px, 5.7vw, 25px);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] > .quick-records .record-value {
+    font-size: clamp(10px, 3vw, 13px);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] > .quick-records .record-card img {
+    right: 2px;
+    bottom: 1px;
+    width: var(--record-resident-height);
+    max-height: var(--record-resident-height);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .bottom-nav {
+    padding-top: 5px;
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .bottom-nav .nav-item {
+    gap: 3px;
+    font-size: var(--type-nav);
+  }
+
+  body[data-experience="real"] .app-viewport[data-mode="unfolded"] .nav-icon {
+    width: clamp(24px, 7vw, 32px);
+    height: clamp(24px, 7vw, 32px);
+  }
+}
