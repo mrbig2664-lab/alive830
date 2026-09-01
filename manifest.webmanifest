@@ -1,9 +1,13 @@
 {
+  "id": "/alive830/",
   "name": "ALIVE",
   "short_name": "ALIVE",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": "/alive830/",
+  "scope": "/alive830/",
   "display": "standalone",
+  "display_override": ["standalone"],
+  "prefer_related_applications": false,
+  "orientation": "natural",
   "background_color": "#f4ead5",
   "theme_color": "#f4ead5",
   "icons": [
