@@ -23,6 +23,20 @@ export function dateLabel(dateKey, timezone = TIMEZONE) {
   return new Intl.DateTimeFormat('zh-CN', { timeZone: timezone, month: 'long', day: 'numeric', weekday: 'short' }).format(date).replace('星期', '周');
 }
 
+// This is the compact label used by the Home HUD.  It deliberately formats a
+// date key rather than using a fixed/demo string, so the UI follows the user's
+// local day boundary in the configured timezone.
+export function monthDayLabel(dateKey, timezone = TIMEZONE) {
+  const date = new Date(`${dateKey}T12:00:00+08:00`);
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: timezone, month: 'numeric', day: 'numeric' }).formatToParts(date);
+  const values = Object.fromEntries(parts.filter(item => item.type !== 'literal').map(item => [item.type, item.value]));
+  return `${values.month}月${values.day}日`;
+}
+
+export function isDemoSource(record) {
+  return record?.source === 'previewSeed' || record?.source === 'demo';
+}
+
 export function activeSmokeEvents(state, dateKey) {
   const corrections = new Set(state.events.filter(event => event.type === 'smokeCorrection' && event.targetEventId).map(event => event.targetEventId));
   return state.events.filter(event => event.type === 'smoke' && event.localDate === dateKey && !event.tombstone && !corrections.has(event.id));
@@ -40,6 +54,115 @@ export function currentCheckin(state, dateKey) { return getRecord(state, `checki
 export function currentSettlement(state, dateKey) { return getRecord(state, `settlement:${dateKey}`); }
 export function currentEncounter(state) { return getRecord(state, 'encounter:smokeBeast'); }
 export function pendingCount(state) { return state.events.filter(event => event.syncStatus === 'pending').length; }
+
+function projectableSmokeEvents(state, dateKey) {
+  return smokeHistory(state, dateKey).filter(event => !isDemoSource(event));
+}
+
+function projectableLifeEvents(state, dateKey, type) {
+  return activeLifeEvents(state, dateKey, type).filter(event => !isDemoSource(event));
+}
+
+function projectableLegacyRecords(state, dateKey, type) {
+  return state.records
+    .filter(record => record.type === type && record.localDate === dateKey && !record.tombstone && !isDemoSource(record))
+    .sort((a, b) => (a.occurredAt || a.createdAt || '').localeCompare(b.occurredAt || b.createdAt || ''));
+}
+
+/**
+ * Canonical read model for one local calendar day.
+ *
+ * Events remain append-only in state.events; this function is only a
+ * projection.  Legacy records are read for compatibility, but clearly marked
+ * preview/demo records are never allowed into a real day's totals.
+ */
+export function deriveDailySummary(state, dateKey) {
+  const smoke = projectableSmokeEvents(state, dateKey);
+  const drinks = [
+    ...projectableLifeEvents(state, dateKey, 'drink'),
+    ...projectableLegacyRecords(state, dateKey, 'drinkDaily')
+  ].sort((a, b) => (a.occurredAt || a.createdAt || '').localeCompare(b.occurredAt || b.createdAt || ''));
+  const exercise = [
+    ...projectableLifeEvents(state, dateKey, 'exercise'),
+    ...projectableLegacyRecords(state, dateKey, 'moveEvent')
+  ].sort((a, b) => (a.occurredAt || a.createdAt || '').localeCompare(b.occurredAt || b.createdAt || ''));
+  const water = [
+    ...projectableLifeEvents(state, dateKey, 'water'),
+    ...projectableLegacyRecords(state, dateKey, 'waterEvent')
+  ].sort((a, b) => (a.occurredAt || a.createdAt || '').localeCompare(b.occurredAt || b.createdAt || ''));
+  const sleep = [
+    ...projectableLifeEvents(state, dateKey, 'sleep_start'),
+    ...projectableLegacyRecords(state, dateKey, 'sleepLog')
+  ].sort((a, b) => (a.occurredAt || a.createdAt || '').localeCompare(b.occurredAt || b.createdAt || '')).at(-1) || null;
+  const checkin = currentCheckin(state, dateKey);
+  const settlement = currentSettlement(state, dateKey);
+  const seedLedger = currentSeedLedger(state, dateKey);
+
+  return {
+    date: dateKey,
+    localDate: dateKey,
+    smokeCount: smoke.length,
+    smokeTimestamps: smoke.map(event => event.occurredAt || event.createdAt).filter(Boolean),
+    smokeEvents: smoke,
+    drinkCount: drinks.reduce((total, event) => total + Number(event.quantity || 1), 0),
+    drinkQuantity: drinks.reduce((total, event) => total + Number(event.quantity || 1), 0),
+    drinkTimestamps: drinks.map(event => event.occurredAt || event.createdAt).filter(Boolean),
+    drinkEvents: drinks,
+    exerciseMinutes: exercise.reduce((total, event) => total + Number(event.durationMinutes || 0), 0),
+    exerciseSessions: exercise,
+    waterCount: water.reduce((total, event) => total + Number(event.quantity || 1), 0),
+    waterTimestamps: water.map(event => event.occurredAt || event.createdAt).filter(Boolean),
+    waterEvents: water,
+    bedtime: sleep,
+    sleep,
+    mood: checkin?.mood || null,
+    checkIn: checkin,
+    seeds: seedLedger ? {
+      earned: Number(seedLedger.earned || 0),
+      used: Number(seedLedger.allocated || 0),
+      remaining: Number(seedLedger.remaining || 0)
+    } : null,
+    settlement: settlement ? {
+      id: settlement.settlementId || settlement.key || null,
+      status: settlement.finalized ? 'finalized' : 'recorded',
+      record: settlement
+    } : null
+  };
+}
+
+export function getDailySummary(state, dateKey) {
+  return deriveDailySummary(state, dateKey);
+}
+
+function dateKeyToUtc(dateKey) {
+  const [year, month, day] = String(dateKey).split('-').map(Number);
+  return Date.UTC(year, month - 1, day);
+}
+
+function utcToDateKey(value) {
+  const date = new Date(value);
+  return [date.getUTCFullYear(), String(date.getUTCMonth() + 1).padStart(2, '0'), String(date.getUTCDate()).padStart(2, '0')].join('-');
+}
+
+export function getDailySummaries(state, startDate, endDate) {
+  const start = dateKeyToUtc(startDate);
+  const end = dateKeyToUtc(endDate);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start > end) return [];
+  const summaries = [];
+  for (let cursor = start; cursor <= end; cursor += 86400000) summaries.push(deriveDailySummary(state, utcToDateKey(cursor)));
+  return summaries;
+}
+
+/** Identify retained records that cannot safely be treated as today's data. */
+export function auditDailyData(state, dateKey) {
+  const validDate = /^\d{4}-\d{2}-\d{2}$/;
+  const all = [...(state.events || []), ...(state.records || [])];
+  return {
+    demoRecords: all.filter(isDemoSource),
+    unscopedRecords: all.filter(record => !validDate.test(record.localDate || '')),
+    legacyRecordsOnDate: (state.records || []).filter(record => record.localDate === dateKey && !isDemoSource(record) && !['bodyCheckIn', 'settlement', 'lifeSeeds', 'dailyFocus', 'worldChange', 'seedAllocation'].includes(record.type))
+  };
+}
 
 export function currentFocus(state, dateKey) {
   return getRecord(state, `focus:${dateKey}`) || {

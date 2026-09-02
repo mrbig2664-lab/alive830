@@ -13,7 +13,8 @@ globalThis.localStorage = {
 const { createStore, getRecord } = await import('../src/state/store.js');
 const {
   TIMEZONE, activeLifeEvents, createLifeEvent, createSmokeCorrection, createSmokeEvent,
-  exerciseMinutes, latestLifeEvent, smokeCount, smokeHistory
+  deriveDailySummary, exerciseMinutes, getDailySummaries, latestLifeEvent,
+  localDateKey, monthDayLabel, smokeCount, smokeHistory
 } = await import('../src/state/domain.js');
 const { MAX_VISIBLE_RESIDENTS, ROOM_RESIDENT_ANCHORS, placeResidents } = await import('../src/data/residents.js');
 
@@ -101,4 +102,70 @@ test('repeatable events survive a store reload', async () => {
   const restored = await secondStore.init();
   assert.equal(activeLifeEvents(restored, DATE, 'drink').length, 2);
   assert.equal(getRecord(restored, 'encounter:smokeBeast'), null);
+});
+
+test('daily projection keeps Sep 1 and Sep 2 data isolated and queryable', async () => {
+  const store = createStore(TIMEZONE);
+  await store.init();
+  const saved = await store.update(state => {
+    state.events = [];
+    state.records = [];
+    createLifeEvent(state, '2026-09-01', 'drink', { quantity: 2 });
+    createLifeEvent(state, '2026-09-01', 'exercise', { durationMinutes: 45 });
+    createLifeEvent(state, '2026-09-01', 'water', { quantity: 3 });
+    createLifeEvent(state, '2026-09-02', 'drink', { quantity: 1 });
+    createLifeEvent(state, '2026-09-02', 'exercise', { durationMinutes: 30 });
+    createLifeEvent(state, '2026-09-02', 'exercise', { durationMinutes: 45 });
+    createLifeEvent(state, '2026-09-02', 'water', { quantity: 1 });
+  });
+  const yesterday = deriveDailySummary(saved, '2026-09-01');
+  const today = deriveDailySummary(saved, '2026-09-02');
+  assert.equal(yesterday.drinkCount, 2);
+  assert.equal(yesterday.exerciseMinutes, 45);
+  assert.equal(yesterday.waterCount, 3);
+  assert.equal(today.drinkCount, 1);
+  assert.equal(today.exerciseMinutes, 75);
+  assert.equal(today.waterCount, 1);
+  assert.deepEqual(getDailySummaries(saved, '2026-09-01', '2026-09-02').map(item => item.date), ['2026-09-01', '2026-09-02']);
+});
+
+test('Asia/Shanghai day boundaries roll from Aug 31 to Sep 1 to Sep 2', () => {
+  assert.equal(localDateKey(new Date('2026-08-31T15:59:59.000Z'), TIMEZONE), '2026-08-31');
+  assert.equal(localDateKey(new Date('2026-08-31T16:00:00.000Z'), TIMEZONE), '2026-09-01');
+  assert.equal(localDateKey(new Date('2026-09-01T15:59:59.000Z'), TIMEZONE), '2026-09-01');
+  assert.equal(localDateKey(new Date('2026-09-01T16:00:00.000Z'), TIMEZONE), '2026-09-02');
+  assert.equal(monthDayLabel('2026-09-02', TIMEZONE), '9月2日');
+});
+
+test('daily smoke history preserves chronological timestamps and Undo only corrects its day', async () => {
+  const store = createStore(TIMEZONE);
+  await store.init();
+  const saved = await store.update(state => {
+    state.events = [];
+    const first = createSmokeEvent(state, '2026-09-01');
+    const second = createSmokeEvent(state, '2026-09-01');
+    const today = createSmokeEvent(state, '2026-09-02');
+    first.occurredAt = '2026-09-01T01:14:00.000Z';
+    second.occurredAt = '2026-09-01T02:26:00.000Z';
+    today.occurredAt = '2026-09-02T01:48:00.000Z';
+    createSmokeCorrection(state, second);
+  });
+  const sep1 = deriveDailySummary(saved, '2026-09-01');
+  const sep2 = deriveDailySummary(saved, '2026-09-02');
+  assert.deepEqual(sep1.smokeTimestamps, ['2026-09-01T01:14:00.000Z']);
+  assert.deepEqual(sep2.smokeTimestamps, ['2026-09-02T01:48:00.000Z']);
+});
+
+test('legacy preview seed is retained but excluded from a real-day projection', async () => {
+  const store = createStore(TIMEZONE);
+  await store.init();
+  const saved = await store.update(state => {
+    state.events = [{ id: 'demo', type: 'smoke', localDate: '2026-09-02', occurredAt: '2026-09-02T00:00:00.000Z', source: 'previewSeed', tombstone: false }];
+    state.records = [{ key: 'demo-move', type: 'moveEvent', localDate: '2026-09-02', durationMinutes: 870, source: 'previewSeed', tombstone: false }];
+  });
+  const summary = deriveDailySummary(saved, '2026-09-02');
+  assert.equal(summary.smokeCount, 0);
+  assert.equal(summary.exerciseMinutes, 0);
+  assert.equal(saved.events.length, 1);
+  assert.equal(saved.records.length, 1);
 });

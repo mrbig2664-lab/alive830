@@ -4,7 +4,7 @@ import {
   TIMEZONE, activeLifeEvents, allocateLifeSeed, currentCheckin, currentEncounter, currentFocus,
   currentSeedLedger, currentSettlement, createLifeEvent, createSmokeCorrection, createSmokeEvent,
   dailySeedReward, deriveAir, ensureDailySeeds, ensureFirstEncounter, ensureFocus, finalizeLifeSeeds,
-  localDateKey, localTime, settlementSummary, smokeCount, smokeHistory
+  deriveDailySummary, isDemoSource, localDateKey, localTime, monthDayLabel, settlementSummary
 } from './state/domain.js';
 import { scene } from './data/scene.js';
 import { placeResidents } from './data/residents.js';
@@ -25,24 +25,19 @@ let undoTimer;
 let reactionTimer;
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[char]));
-const dayRecords = type => state.records.filter(record => record.type === type && record.localDate === currentDate && !record.tombstone);
-const dayEvents = type => activeLifeEvents(state, currentDate, type);
-const projectedEvents = (eventType, legacyType) => {
-  return [...dayEvents(eventType), ...dayRecords(legacyType)].sort((a, b) => (a.occurredAt || '').localeCompare(b.occurredAt || ''));
-};
+const dayRecords = type => state.records.filter(record => record.type === type && record.localDate === currentDate && !record.tombstone && !isDemoSource(record));
+const dayEvents = type => activeLifeEvents(state, currentDate, type).filter(event => !isDemoSource(event));
 const focus = () => currentFocus(state, currentDate);
 const checkin = () => currentCheckin(state, currentDate);
 
 function viewRecords() {
-  const drinks = projectedEvents('drink', 'drinkDaily');
-  const moves = projectedEvents('exercise', 'moveEvent');
-  const waters = projectedEvents('water', 'waterEvent');
-  const sleep = projectedEvents('sleep_start', 'sleepLog').at(-1);
+  const summary = deriveDailySummary(state, currentDate);
+  const sleep = summary.sleep;
   return {
-    smoke: smokeCount(state, currentDate),
-    drink: drinks.reduce((total, event) => total + Number(event.quantity || 1), 0),
-    move: moves.reduce((total, event) => total + Number(event.durationMinutes || 0), 0),
-    water: waters.reduce((total, event) => total + Number(event.quantity || 1), 0),
+    smoke: summary.smokeCount,
+    drink: summary.drinkCount,
+    move: summary.exerciseMinutes,
+    water: summary.waterCount,
     food: dayRecords('foodLog').length,
     sleep: sleep?.bedtime ? `${sleep.bedtime} 上床` : sleep?.occurredAt ? `${localTime(sleep.occurredAt, TIMEZONE)} 上床` : '—'
   };
@@ -62,6 +57,7 @@ function residentView() {
 
 function viewModel() {
   const ledger = currentSeedLedger(state, currentDate);
+  const summary = deriveDailySummary(state, currentDate);
   const mood = checkin()?.mood || null;
   return {
     mode,
@@ -73,7 +69,8 @@ function viewModel() {
     plantAsset: scene.assets.plant,
     eggAsset: scene.assets.egg,
     residents: residentView(),
-    smokeHistory: smokeHistory(state, currentDate).map(event => ({ ...event, time: localTime(event.occurredAt || event.createdAt, TIMEZONE) })),
+    smokeHistory: summary.smokeEvents.map(event => ({ ...event, time: localTime(event.occurredAt || event.createdAt, TIMEZONE) })),
+    todayLabel: monthDayLabel(currentDate, TIMEZONE),
     reaction: ui.reaction
   };
 }
@@ -251,6 +248,20 @@ window.addEventListener('resize', () => {
   const next = detectPosture();
   if (next !== mode) { mode = next; render(); }
 }, { passive: true });
+
+function refreshDateProjection() {
+  const nextDate = localDateKey(new Date(), TIMEZONE);
+  if (nextDate === currentDate) return;
+  currentDate = nextDate;
+  if (!state) return;
+  store.update(draft => ensureFocus(draft, currentDate)).then(nextState => {
+    state = nextState;
+    render();
+  }).catch(error => console.error('ALIVE V4 daily projection refresh failed', error));
+}
+
+document.addEventListener('visibilitychange', refreshDateProjection);
+window.setInterval(refreshDateProjection, 60_000);
 
 async function init() {
   state = await store.init();

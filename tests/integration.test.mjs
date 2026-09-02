@@ -19,12 +19,13 @@ test('interactive domain records smoke, creates encounter, and appends undo corr
   const store = createStore(TIMEZONE);
   let first;
   const saved = await store.init();
+  const today = localDateKey(new Date(), TIMEZONE);
   const next = await store.update(state => {
-    first = createSmokeEvent(state, '2026-08-30');
+    first = createSmokeEvent(state, today);
     ensureFirstEncounter(state, first);
     createSmokeCorrection(state, first);
   });
-  assert.equal(smokeCount(next, '2026-08-30'), 7);
+  assert.equal(smokeCount(next, today), 7);
   assert.equal(next.events.filter(event => event.type === 'smokeCorrection').length, 1);
   assert.equal(getRecord(next, 'encounter:smokeBeast').relationshipStage, 'encounter');
   assert.ok(saved.world.firstSmokeEncountered);

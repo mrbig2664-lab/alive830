@@ -37,6 +37,7 @@ test('first-screen layout and approved assets are present', async () => {
   assert.match(html, /src\/app\.js/);
   assert.match(shell, /data-mode-choice="unfolded"/);
   assert.match(shell, /data-mode-choice="folded"/);
+  assert.doesNotMatch(shell, /8月27日/);
   for (const asset of [
     'room/bed.png',
     'room/window.png',

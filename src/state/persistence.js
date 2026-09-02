@@ -4,14 +4,20 @@ const DB_STORE = 'app';
 const FALLBACK_KEY = 'alive-v4-clean-room-fallback';
 
 function nowIso() { return new Date().toISOString(); }
+function localDateKey(date = new Date(), timezone) {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
+  const values = Object.fromEntries(parts.filter(item => item.type !== 'literal').map(item => [item.type, item.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
 function clone(value) { return typeof structuredClone === 'function' ? structuredClone(value) : JSON.parse(JSON.stringify(value)); }
 
 function previewSeed(timezone) {
   const now = nowIso();
+  const previewDate = localDateKey(new Date(now), timezone);
   const smokeEvents = Array.from({ length: 7 }, (_, index) => ({
     id: `preview-smoke-${index + 1}`,
     clientEventId: `preview-client-${index + 1}`,
-    userId: 'local-user', type: 'smoke', localDate: '2026-08-30',
+    userId: 'local-user', type: 'smoke', localDate: previewDate,
     occurredAt: now, timezone, source: 'previewSeed', createdAt: now, updatedAt: now,
     ruleVersion: 'slice01-v1', tombstone: false, syncStatus: 'saved'
   }));
@@ -21,9 +27,9 @@ function previewSeed(timezone) {
     events: smokeEvents,
     records: [
       { key: 'encounter:smokeBeast', type: 'encounterRecord', encounterId: 'preview-encounter', characterId: 'smokeBeast', relationshipStage: 'encounter', encounterType: 'first', triggerEventId: smokeEvents[0].id, occurredAt: now, ruleVersion: 'slice01-v1', createdAt: now, updatedAt: now },
-      { key: 'moveEvent:2026-08-30:preview', id: 'preview-move', type: 'moveEvent', localDate: '2026-08-30', occurredAt: now, durationMinutes: 60, source: 'previewSeed', createdAt: now, updatedAt: now },
-      { key: 'sleepLog:2026-08-30:preview', id: 'preview-sleep', type: 'sleepLog', localDate: '2026-08-30', occurredAt: now, bedtime: '23:48', source: 'previewSeed', createdAt: now, updatedAt: now },
-      ...Array.from({ length: 6 }, (_, index) => ({ key: `waterEvent:2026-08-30:preview-${index + 1}`, id: `preview-water-${index + 1}`, type: 'waterEvent', localDate: '2026-08-30', occurredAt: now, source: 'previewSeed', createdAt: now, updatedAt: now }))
+      { key: `moveEvent:${previewDate}:preview`, id: 'preview-move', type: 'moveEvent', localDate: previewDate, occurredAt: now, durationMinutes: 60, source: 'previewSeed', createdAt: now, updatedAt: now },
+      { key: `sleepLog:${previewDate}:preview`, id: 'preview-sleep', type: 'sleepLog', localDate: previewDate, occurredAt: now, bedtime: '23:48', source: 'previewSeed', createdAt: now, updatedAt: now },
+      ...Array.from({ length: 6 }, (_, index) => ({ key: `waterEvent:${previewDate}:preview-${index + 1}`, id: `preview-water-${index + 1}`, type: 'waterEvent', localDate: previewDate, occurredAt: now, source: 'previewSeed', createdAt: now, updatedAt: now }))
     ],
     world: {
       roomStage: 'room', plantStage: 'stage_01', eggStage: 'stage_01', outsideStage: 'blank',
