@@ -34,7 +34,11 @@ function statusRows(records, target = 10) {
     ['睡眠', records.sleep || '—', 'purple', scene.assets.moon],
     ['喝水', `${records.water} / 8 杯`, 'blue', scene.assets.water],
   ];
-  return rows.map(([label, value, color, icon], index) => `<div class="status-row"${index === 0 ? ' data-action="smoke-history" role="button" tabindex="0" aria-label="打开今天的抽烟记录"' : ''}><span>${icon ? `<img class="status-icon" src="${icon}" alt="">` : `<i class="status-mark ${color}"></i>`}${label}</span><strong>${value}</strong></div>`).join('');
+  return rows.map(([label, value, color, icon], index) => {
+    const action = index === 0 ? 'smoke-history' : 'daily-history';
+    const detail = index === 0 ? '打开今天的抽烟记录' : `打开今天的${label}记录，可修改或删除`;
+    return `<div class="status-row" data-action="${action}" role="button" tabindex="0" aria-label="${detail}"><span>${icon ? `<img class="status-icon" src="${icon}" alt="">` : `<i class="status-mark ${color}"></i>`}${label}</span><strong>${value}</strong></div>`;
+  }).join('');
 }
 
 function actionCard(item, records) {
@@ -90,7 +94,7 @@ export function eventEditSheet({ target, targetId, targetKind, dateLabel = '' })
 }
 
 function foldedFocusPanel(records, target = 10) {
-  return `<section class="focus-panel folded-focus"><div class="focus-copy"><span class="mini-kicker">TODAY · 今天</span><h2>${scene.focus}</h2><p>不超过 ${target} 支，先照顾好今天。</p></div><div class="focus-meter" data-action="smoke-history" role="button" tabindex="0" aria-label="打开今天的抽烟记录"><strong>${records.smoke}</strong><span>支</span><small>目标 ≤${target}支</small><div class="meter-track"><i style="width:${Math.min(records.smoke * 100 / target, 100)}%"></i></div></div></section>`;
+  return `<section class="focus-panel folded-focus"><div class="focus-copy" data-action="daily-history" role="button" tabindex="0" aria-label="打开今天的生活记录"><span class="mini-kicker">TODAY · 今天</span><h2>${scene.focus}</h2><p>不超过 ${target} 支，先照顾好今天。</p></div><div class="focus-meter" data-action="smoke-history" role="button" tabindex="0" aria-label="打开今天的抽烟记录"><strong>${records.smoke}</strong><span>支</span><small>目标 ≤${target}支</small><div class="meter-track"><i style="width:${Math.min(records.smoke * 100 / target, 100)}%"></i></div></div></section>`;
 }
 
 function statusPanel(records, target = 10, mood = null, seedBalance = 0, todayLabel = '—') {

@@ -195,6 +195,37 @@ test('event-level corrections preserve originals and recalculate drink/exercise/
   assert.equal(saved.events.find(event => event.id === drinkId).tombstone, true);
 });
 
+test('legacy drink, exercise, water and sleep records are individually correctable', async () => {
+  const store = createStore(TIMEZONE);
+  await store.init();
+  let ids;
+  const saved = await store.update(state => {
+    state.events = [];
+    state.records = [];
+    const drink = { key: 'drinkDaily:2026-08-30:1', id: 'legacy-drink', type: 'drinkDaily', localDate: DATE, occurredAt: localDateTimeToIso(DATE, '20:14'), quantity: 1, source: 'quickLog', tombstone: false };
+    const exercise = { key: 'moveEvent:2026-08-30:1', id: 'legacy-exercise', type: 'moveEvent', localDate: DATE, occurredAt: localDateTimeToIso(DATE, '07:30'), durationMinutes: 1100, source: 'quickLog', tombstone: false };
+    const water = { key: 'waterEvent:2026-08-30:1', id: 'legacy-water', type: 'waterEvent', localDate: DATE, occurredAt: localDateTimeToIso(DATE, '09:00'), quantity: 1, source: 'quickLog', tombstone: false };
+    const sleep = { key: 'sleepLog:2026-08-30:1', id: 'legacy-sleep', type: 'sleepLog', localDate: DATE, occurredAt: localDateTimeToIso(DATE, '23:48'), bedtime: '23:48', source: 'quickLog', tombstone: false };
+    state.records.push(drink, exercise, water, sleep);
+    ids = { drink: drink.id, exercise: exercise.id, water: water.id, sleep: sleep.id };
+  });
+  const corrected = await store.update(state => {
+    correctLifeEvent(state, ids.drink, { quantity: 1 });
+    correctLifeEvent(state, ids.exercise, { durationMinutes: 45, occurredAt: localDateTimeToIso(DATE, '18:20') });
+    deleteLifeEvent(state, ids.water);
+    correctLifeEvent(state, ids.sleep, { bedtime: '22:30', occurredAt: localDateTimeToIso(DATE, '22:30') });
+  });
+  const summary = deriveDailySummary(corrected, DATE);
+  assert.equal(summary.drinkCount, 1);
+  assert.equal(summary.exerciseMinutes, 45);
+  assert.equal(summary.waterCount, 0);
+  assert.equal(summary.sleep.bedtime, '22:30');
+  assert.equal(corrected.events.filter(event => event.type === 'eventCorrection').length, 4);
+  const restored = await createStore(TIMEZONE).init();
+  assert.equal(deriveDailySummary(restored, DATE).exerciseMinutes, 45);
+  assert.equal(deriveDailySummary(restored, DATE).waterCount, 0);
+});
+
 test('manual smoke correction reorders history, renumbers projection, and survives reload', async () => {
   const firstStore = createStore(TIMEZONE);
   await firstStore.init();

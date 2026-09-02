@@ -321,10 +321,11 @@ document.addEventListener('click', async event => {
 });
 
 document.addEventListener('keydown', event => {
-  const trigger = event.target.closest?.('[data-action="smoke-history"]');
+  const trigger = event.target.closest?.('[data-action="smoke-history"], [data-action="daily-history"]');
   if (!trigger || !['Enter', ' '].includes(event.key)) return;
   event.preventDefault();
-  ui.sheet = 'smoke-history';
+  ui.historyDate = currentDate;
+  ui.sheet = trigger.dataset.action === 'daily-history' ? 'daily-history' : 'smoke-history';
   render();
 });
 
