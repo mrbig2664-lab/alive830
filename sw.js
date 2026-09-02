@@ -1,4 +1,4 @@
-const CACHE_NAME = 'alive-v4-shell-v1';
+const CACHE_NAME = 'alive-v4-shell-v2-daily-history';
 
 self.addEventListener('install', event => {
   event.waitUntil(
