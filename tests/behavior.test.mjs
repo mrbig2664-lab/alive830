@@ -12,9 +12,9 @@ globalThis.localStorage = {
 
 const { createStore, getRecord } = await import('../src/state/store.js');
 const {
-  TIMEZONE, activeLifeEvents, createLifeEvent, createSmokeCorrection, createSmokeEvent,
-  deriveDailySummary, exerciseMinutes, getDailySummaries, latestLifeEvent,
-  localDateKey, monthDayLabel, smokeCount, smokeHistory
+  TIMEZONE, activeLifeEvents, correctLifeEvent, createLifeEvent, createSmokeCorrection, createSmokeEvent,
+  deriveDailySummary, deleteLifeEvent, exerciseMinutes, getDailySummaries, latestLifeEvent,
+  localDateKey, localDateTimeToIso, monthDayLabel, shiftLocalDate, smokeCount, smokeHistory
 } = await import('../src/state/domain.js');
 const { MAX_VISIBLE_RESIDENTS, ROOM_RESIDENT_ANCHORS, placeResidents } = await import('../src/data/residents.js');
 
@@ -168,4 +168,59 @@ test('legacy preview seed is retained but excluded from a real-day projection', 
   assert.equal(summary.exerciseMinutes, 0);
   assert.equal(saved.events.length, 1);
   assert.equal(saved.records.length, 1);
+});
+
+test('event-level corrections preserve originals and recalculate drink/exercise/water projections', async () => {
+  const store = createStore(TIMEZONE);
+  await store.init();
+  let drinkId;
+  const saved = await store.update(state => {
+    state.events = [];
+    state.records = [];
+    const drink = createLifeEvent(state, DATE, 'drink', { quantity: 1, unit: '杯' });
+    drinkId = drink.id;
+    createLifeEvent(state, DATE, 'drink', { quantity: 1, unit: '杯' });
+    const exercise = createLifeEvent(state, DATE, 'exercise', { durationMinutes: 45, unit: 'min' });
+    createLifeEvent(state, DATE, 'water', { quantity: 1, unit: '杯' });
+    correctLifeEvent(state, exercise.id, { durationMinutes: 90, occurredAt: localDateTimeToIso(DATE, '18:20') });
+    deleteLifeEvent(state, drink.id);
+  });
+  const summary = deriveDailySummary(saved, DATE);
+  assert.equal(summary.drinkCount, 1);
+  assert.equal(summary.exerciseMinutes, 90);
+  assert.equal(summary.waterCount, 1);
+  assert.equal(summary.exerciseSessions[0].durationMinutes, 90);
+  assert.equal(saved.events.filter(event => event.type === 'eventCorrection').length, 2);
+  assert.equal(saved.events.find(event => event.type === 'eventCorrection' && event.action === 'delete').original.quantity, 1);
+  assert.equal(saved.events.find(event => event.id === drinkId).tombstone, true);
+});
+
+test('manual smoke correction reorders history, renumbers projection, and survives reload', async () => {
+  const firstStore = createStore(TIMEZONE);
+  await firstStore.init();
+  let thirdId;
+  await firstStore.update(state => {
+    state.events = [];
+    const first = createSmokeEvent(state, DATE);
+    const second = createSmokeEvent(state, DATE);
+    const third = createSmokeEvent(state, DATE);
+    thirdId = third.id;
+    first.occurredAt = localDateTimeToIso(DATE, '09:42');
+    second.occurredAt = localDateTimeToIso(DATE, '11:17');
+    third.occurredAt = localDateTimeToIso(DATE, '13:06');
+  });
+  const saved = await firstStore.update(state => correctLifeEvent(state, thirdId, { occurredAt: localDateTimeToIso(DATE, '08:08') }));
+  assert.deepEqual(smokeHistory(saved, DATE).map(event => event.occurredAt), [
+    localDateTimeToIso(DATE, '08:08'), localDateTimeToIso(DATE, '09:42'), localDateTimeToIso(DATE, '11:17')
+  ]);
+  const secondStore = createStore(TIMEZONE);
+  const restored = await secondStore.init();
+  assert.equal(smokeCount(restored, DATE), 3);
+  assert.equal(restored.events.filter(event => event.type === 'eventCorrection').length, 1);
+});
+
+test('history date helpers keep yesterday queryable without mixing into today', () => {
+  assert.equal(shiftLocalDate('2026-09-02', -1), '2026-09-01');
+  assert.equal(shiftLocalDate('2026-09-01', -1), '2026-08-31');
+  assert.equal(localDateTimeToIso('2026-09-02', '00:08'), '2026-09-01T16:08:00.000Z');
 });

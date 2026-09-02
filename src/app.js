@@ -1,10 +1,11 @@
-import { renderAppViewport, renderShell, smokeHistoryDrawer } from './layout/shell.js';
+import { dailyHistorySheet, eventEditSheet, eventMenuSheet, renderAppViewport, renderShell, smokeHistoryDrawer } from './layout/shell.js';
 import { createStore, getRecord, upsertRecord } from './state/store.js';
 import {
   TIMEZONE, activeLifeEvents, allocateLifeSeed, currentCheckin, currentEncounter, currentFocus,
   currentSeedLedger, currentSettlement, createLifeEvent, createSmokeCorrection, createSmokeEvent,
-  dailySeedReward, deriveAir, ensureDailySeeds, ensureFirstEncounter, ensureFocus, finalizeLifeSeeds,
-  deriveDailySummary, isDemoSource, localDateKey, localTime, monthDayLabel, settlementSummary
+  correctLifeEvent, dailySeedReward, deriveAir, ensureDailySeeds, ensureFirstEncounter, ensureFocus, finalizeLifeSeeds,
+  deriveDailySummary, isDemoSource, localDateKey, localDateTimeToIso, localTime, monthDayLabel, dateLabel, settlementSummary,
+  shiftLocalDate
 } from './state/domain.js';
 import { scene } from './data/scene.js';
 import { placeResidents } from './data/residents.js';
@@ -19,7 +20,7 @@ const detectPosture = () => (window.innerWidth / Math.max(window.innerHeight, 1)
 let mode = queryMode === 'folded' || queryMode === 'unfolded' ? queryMode : detectPosture();
 let state = null;
 let currentDate = localDateKey(new Date(), TIMEZONE);
-let ui = { sheet: null, draft: null, showSettlement: false, undoTargetId: null, toast: null, reaction: null };
+let ui = { sheet: null, draft: null, showSettlement: false, undoTargetId: null, toast: null, reaction: null, historyDate: null, editTargetId: null, editTargetKind: null };
 let toastTimer;
 let undoTimer;
 let reactionTimer;
@@ -75,6 +76,38 @@ function viewModel() {
   };
 }
 
+function historyViewModel() {
+  const selectedDate = ui.historyDate || currentDate;
+  const raw = deriveDailySummary(state, selectedDate);
+  const withTime = event => ({ ...event, time: event.bedtime || localTime(event.occurredAt || event.createdAt, TIMEZONE) });
+  const summary = {
+    ...raw,
+    smokeEvents: raw.smokeEvents.map(withTime),
+    drinkEvents: raw.drinkEvents.map(withTime),
+    exerciseSessions: raw.exerciseSessions.map(withTime),
+    waterEvents: raw.waterEvents.map(withTime),
+    sleep: raw.sleep ? withTime(raw.sleep) : null,
+  };
+  const dateOptions = Array.from({ length: 7 }, (_, index) => {
+    const date = shiftLocalDate(currentDate, index - 6);
+    const label = monthDayLabel(date, TIMEZONE);
+    return { date, label, weekday: dateLabel(date, TIMEZONE).replace(label, '').trim() };
+  });
+  return { selectedDate, todayDate: currentDate, dateOptions, summary };
+}
+
+function correctionTarget() {
+  if (!ui.editTargetId) return null;
+  return ui.editTargetKind === 'record'
+    ? state.records.find(record => record.id === ui.editTargetId || record.key === ui.editTargetId) || null
+    : state.events.find(event => event.id === ui.editTargetId) || null;
+}
+
+function correctionLabel(target) {
+  if (!target) return '这条记录';
+  return ({ smoke: '抽烟', drink: '喝酒', water: '喝水', exercise: '运动', sleep_start: '准备睡', bodyCheckIn: '身体状态', drinkDaily: '喝酒', waterEvent: '喝水', moveEvent: '运动', sleepLog: '准备睡' })[target.type] || '这条记录';
+}
+
 function showToast(message, action = null) {
   clearTimeout(toastTimer);
   ui.toast = { message, action };
@@ -92,6 +125,16 @@ function showFeedback(character, message, action = null) {
 function renderSheet() {
   if (!ui.sheet) return '';
   if (ui.sheet === 'smoke-history') return smokeHistoryDrawer(viewModel().smokeHistory);
+  if (ui.sheet === 'daily-history') return dailyHistorySheet(historyViewModel());
+  if (ui.sheet === 'event-menu') {
+    const target = correctionTarget();
+    return eventMenuSheet({ label: correctionLabel(target), time: target?.occurredAt ? localTime(target.occurredAt, TIMEZONE) : target?.bedtime || '', targetId: ui.editTargetId, targetKind: ui.editTargetKind });
+  }
+  if (ui.sheet === 'event-edit') {
+    const target = correctionTarget();
+    const formatted = target ? { ...target, time: target.bedtime || (target.occurredAt ? localTime(target.occurredAt, TIMEZONE) : '') } : null;
+    return eventEditSheet({ target: formatted, targetId: ui.editTargetId, targetKind: ui.editTargetKind, dateLabel: target?.localDate || currentDate });
+  }
   if (ui.sheet === 'other') {
     return `<section class="interaction-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"><button class="sheet-close" data-action="close-sheet" aria-label="关闭">×</button><span class="sheet-kicker">QUICK LOG · 轻轻记一下</span><h2 id="sheet-title">还想记点别的？</h2><p>不用完整记录，今天有发生就好。</p><div class="other-log-grid"><button data-action="simple-log" data-log-type="water">💧 喝水了</button><button data-action="simple-log" data-log-type="drink">🍷 喝酒</button><button data-action="simple-log" data-log-type="exercise">🏃 动了一下</button><button data-action="simple-log" data-log-type="sleep_start">🌙 准备睡</button></div><button class="secondary-button" data-action="checkin">今晚记身体状态</button></section>`;
   }
@@ -175,6 +218,42 @@ async function handleMood(mood) {
   showFeedback('zhanzhan', mood === 'good' ? '收到了，今天不错。' : mood === 'bad' ? '知道了，先照顾自己。' : '收到了，慢慢来。');
 }
 
+async function handleDeleteEvent(targetId, targetKind) {
+  const targetDate = correctionTarget()?.localDate || ui.historyDate || currentDate;
+  await updateState(draft => correctLifeEvent(draft, targetId, { deleted: true }));
+  ui.historyDate = targetDate;
+  ui.sheet = 'daily-history';
+  showToast('这条记录已移出当天统计。');
+}
+
+async function handleSaveEvent(targetId, targetKind) {
+  const target = correctionTarget();
+  if (!target) return;
+  const field = name => document.querySelector(`[data-edit-field="${name}"]`)?.value;
+  const changes = {};
+  const time = field('time');
+  if (time && target.occurredAt) {
+    const occurredAt = localDateTimeToIso(target.localDate || ui.historyDate || currentDate, time);
+    if (occurredAt) changes.occurredAt = occurredAt;
+  }
+  const duration = field('durationMinutes');
+  if (duration !== undefined && duration !== null && duration !== '') changes.durationMinutes = Number(duration);
+  const quantity = field('quantity');
+  if (quantity !== undefined && quantity !== null && quantity !== '') changes.quantity = Number(quantity);
+  const mood = field('mood');
+  if (mood) changes.mood = mood;
+  if (target.type === 'sleep_start' || target.type === 'sleepLog') changes.bedtime = time || target.bedtime;
+  if (!Object.keys(changes).length) { ui.sheet = 'daily-history'; render(); return; }
+  const targetDate = target.localDate || ui.historyDate || currentDate;
+  await updateState(draft => {
+    correctLifeEvent(draft, targetId, changes);
+    if (targetDate === currentDate) draft.world.airState = deriveAir(draft, currentDate);
+  });
+  ui.historyDate = targetDate;
+  ui.sheet = 'daily-history';
+  showToast('记录已更新，统计也同步了。');
+}
+
 async function submitCheckin() {
   const draft = ui.draft;
   await updateState(nextState => {
@@ -221,6 +300,12 @@ document.addEventListener('click', async event => {
   if (action === 'smoke') { await handleSmoke(); return; }
   if (action === 'undo') { await handleUndo(); return; }
   if (action === 'smoke-history') { ui.sheet = 'smoke-history'; ui.showSettlement = false; render(); return; }
+  if (action === 'daily-history') { ui.historyDate = currentDate; ui.sheet = 'daily-history'; ui.showSettlement = false; render(); return; }
+  if (action === 'history-day') { ui.historyDate = button.dataset.date; ui.sheet = 'daily-history'; render(); return; }
+  if (action === 'event-menu') { ui.editTargetId = button.dataset.targetId; ui.editTargetKind = button.dataset.targetKind || 'event'; ui.sheet = 'event-menu'; render(); return; }
+  if (action === 'open-event-edit') { ui.sheet = 'event-edit'; render(); return; }
+  if (action === 'delete-event') { await handleDeleteEvent(button.dataset.targetId, button.dataset.targetKind || 'event'); return; }
+  if (action === 'save-event') { await handleSaveEvent(button.dataset.targetId, button.dataset.targetKind || 'event'); return; }
   if (action === 'simple-log') { await handleSimpleLog(button.dataset.logType); return; }
   if (action === 'drink') { await handleSimpleLog('drink'); return; }
   if (action === 'move') { await handleSimpleLog('exercise'); return; }

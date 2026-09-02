@@ -153,6 +153,52 @@ export function getDailySummaries(state, startDate, endDate) {
   return summaries;
 }
 
+export function shiftLocalDate(dateKey, days) {
+  const value = dateKeyToUtc(dateKey);
+  if (!Number.isFinite(value)) return dateKey;
+  return utcToDateKey(value + Number(days || 0) * 86400000);
+}
+
+export function localDateTimeToIso(dateKey, time = '00:00') {
+  const [year, month, day] = String(dateKey).split('-').map(Number);
+  const [hour, minute] = String(time).split(':').map(Number);
+  if (![year, month, day, hour, minute].every(Number.isFinite)) return null;
+  return new Date(Date.UTC(year, month - 1, day, hour - 8, minute)).toISOString();
+}
+
+function correctionSnapshot(target) {
+  return Object.fromEntries(['id', 'key', 'type', 'localDate', 'occurredAt', 'quantity', 'unit', 'durationMinutes', 'bedtime', 'mood', 'value']
+    .filter(key => target?.[key] !== undefined)
+    .map(key => [key, target[key]]));
+}
+
+/** Correct one event/legacy event record while retaining a correction record. */
+export function correctLifeEvent(state, targetId, changes = {}) {
+  const target = state.events.find(event => event.id === targetId)
+    || state.records.find(record => record.id === targetId || record.key === targetId);
+  if (!target) return { ok: false, reason: 'notFound' };
+  const now = new Date().toISOString();
+  const isDelete = Boolean(changes.deleted);
+  const correction = {
+    id: createId('event-correction'), clientEventId: createId('client'), userId: state.userId,
+    type: 'eventCorrection', action: isDelete ? 'delete' : 'edit', targetEventId: target.id || target.key,
+    targetKind: state.events.includes(target) ? 'event' : 'record', localDate: target.localDate,
+    occurredAt: now, timezone: state.timezone, source: 'manualCorrection', original: correctionSnapshot(target),
+    changes: { ...changes, deleted: undefined }, createdAt: now, updatedAt: now, ruleVersion: RULE_VERSION,
+    tombstone: false, syncStatus: 'pending'
+  };
+  state.events.push(correction);
+  if (isDelete) target.tombstone = true;
+  else for (const key of ['localDate', 'occurredAt', 'quantity', 'unit', 'durationMinutes', 'bedtime', 'mood', 'value']) if (changes[key] !== undefined) target[key] = changes[key];
+  target.correctionMetadata = { ...(target.correctionMetadata || {}), correctionId: correction.id, correctedAt: now, action: correction.action, original: correction.original };
+  target.updatedAt = now;
+  return { ok: true, correction, target };
+}
+
+export function deleteLifeEvent(state, targetId) {
+  return correctLifeEvent(state, targetId, { deleted: true });
+}
+
 /** Identify retained records that cannot safely be treated as today's data. */
 export function auditDailyData(state, dateKey) {
   const validDate = /^\d{4}-\d{2}-\d{2}$/;
