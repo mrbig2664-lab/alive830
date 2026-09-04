@@ -11,10 +11,12 @@ import { scene } from './data/scene.js';
 import { placeResidents } from './data/residents.js';
 
 const app = document.querySelector('#app');
-const store = createStore(TIMEZONE);
 const query = new URLSearchParams(window.location.search);
+const store = createStore(TIMEZONE, { seedDemo: false });
 const path = window.location.pathname.replace(/\/+$/, '');
 const isQaDemo = path.endsWith('/qa/device-preview') || query.get('qa') === '1';
+const isDevTools = query.get('dev') === '1' || query.get('dev') === 'resident-demo';
+const residentDemo = query.get('residentDemo');
 const queryMode = isQaDemo ? query.get('mode') : null;
 const detectPosture = () => (window.innerWidth / Math.max(window.innerHeight, 1)) <= 0.7 ? 'folded' : 'unfolded';
 let mode = queryMode === 'folded' || queryMode === 'unfolded' ? queryMode : detectPosture();
@@ -45,14 +47,28 @@ function viewRecords() {
 }
 
 function residentView() {
+  const available = {
+    liver: { id: 'liver', asset: scene.assets.liver, alt: '肝肝', residentClass: 'visitor' },
+    muscle: { id: 'muscle', asset: scene.assets.muscle, alt: '肌肉仔', residentClass: 'visitor' },
+    moon: { id: 'moon', asset: scene.assets.moon, alt: '月亮仔', residentClass: 'visitor' },
+    water: { id: 'water', asset: scene.assets.water, alt: '水滴仔', residentClass: 'visitor' }
+  };
   const candidates = [];
-  if (dayEvents('sleep_start').length) candidates.push({ id: 'moon', asset: scene.assets.moon, alt: '月亮仔' });
-  if (dayEvents('drink').length || dayRecords('drinkDaily').some(record => record.source !== 'previewSeed')) candidates.push({ id: 'liver', asset: scene.assets.liver, alt: '肝肝' });
-  if (dayEvents('exercise').length || dayRecords('moveEvent').some(record => record.source !== 'previewSeed')) candidates.push({ id: 'muscle', asset: scene.assets.muscle, alt: '肌肉仔' });
-  if (dayEvents('water').length || dayRecords('waterEvent').some(record => record.source !== 'previewSeed')) candidates.push({ id: 'water', asset: scene.assets.water, alt: '水滴仔' });
-  const prioritized = ui.reaction && candidates.some(candidate => candidate.id === ui.reaction)
-    ? [candidates.find(candidate => candidate.id === ui.reaction), ...candidates.filter(candidate => candidate.id !== ui.reaction)]
-    : candidates;
+  if (dayEvents('sleep_start').length) candidates.push(available.moon);
+  if (dayEvents('drink').length || dayRecords('drinkDaily').some(record => record.source !== 'previewSeed')) candidates.push(available.liver);
+  if (dayEvents('exercise').length || dayRecords('moveEvent').some(record => record.source !== 'previewSeed')) candidates.push(available.muscle);
+  if (dayEvents('water').length || dayRecords('waterEvent').some(record => record.source !== 'previewSeed')) candidates.push(available.water);
+
+  // DEV-only QA can preview 0/1/2/3 eligible visitors without changing the
+  // persisted state. Production only shows the visitor tied to the current,
+  // short-lived reaction; a historical record never creates residency.
+  if (isDevTools && residentDemo !== null) {
+    const demoIds = ['liver', 'muscle', 'moon', 'water'];
+    const count = Math.max(0, Math.min(Number(residentDemo) || 0, demoIds.length));
+    return placeResidents(demoIds.slice(0, count).map(id => available[id])).map(resident => ({ ...resident, reaction: false }));
+  }
+  if (!ui.reaction || !available[ui.reaction]) return [];
+  const prioritized = [available[ui.reaction], ...candidates.filter(candidate => candidate.id !== ui.reaction)];
   return placeResidents(prioritized).map(resident => ({ ...resident, reaction: ui.reaction === resident.id }));
 }
 
@@ -194,13 +210,34 @@ function renderSettlement() {
 
 function interactionLayer() {
   const hasPanel = Boolean(ui.sheet || ui.showSettlement);
-  return `${hasPanel ? '<div class="interaction-backdrop" data-action="close-sheet"></div>' : ''}${ui.sheet ? renderSheet() : ''}${ui.showSettlement ? renderSettlement() : ''}${ui.toast ? `<div class="interaction-toast" role="status"><span>${esc(ui.toast.message)}</span>${ui.toast.action ? `<button data-action="${ui.toast.action}">撤销</button>` : ''}</div>` : ''}`;
+  const devPanel = isDevTools && query.get('reset') === '1' ? `<section class="dev-tools-panel" aria-label="开发数据工具"><strong>DEV · 本地数据</strong><button data-action="dev-reset">备份并清空测试数据</button><small>会先导出备份；清空后从 ${esc(query.get('cleanStart') || currentDate)} 开始记录。</small></section>` : '';
+  return `${hasPanel ? '<div class="interaction-backdrop" data-action="close-sheet"></div>' : ''}${ui.sheet ? renderSheet() : ''}${ui.showSettlement ? renderSettlement() : ''}${ui.toast ? `<div class="interaction-toast" role="status"><span>${esc(ui.toast.message)}</span>${ui.toast.action ? `<button data-action="${ui.toast.action}">撤销</button>` : ''}</div>` : ''}${devPanel}`;
 }
 
 function render() {
   if (!state) return;
   document.body.dataset.experience = isQaDemo ? 'qa' : 'real';
   app.innerHTML = (isQaDemo ? renderShell(viewModel()) : renderPage()) + interactionLayer();
+}
+
+function downloadBackup(backup) {
+  if (!backup || typeof document === 'undefined') return;
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `alive-state-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+async function handleDevReset() {
+  if (typeof window.confirm === 'function' && !window.confirm('先备份，再清空本机测试数据？')) return;
+  const result = await store.resetUserData(query.get('cleanStart') || currentDate);
+  downloadBackup(result.backup);
+  state = await store.update(draft => ensureFocus(draft, currentDate));
+  ui.reaction = null;
+  ui.toast = null;
+  showToast('已备份并清空开发数据，新的真实时间线已开始。');
 }
 
 async function updateState(mutator) {
@@ -370,6 +407,7 @@ document.addEventListener('click', async event => {
   }
   if (action === 'close-sheet' || action === 'close-settlement') { ui.sheet = null; ui.draft = null; ui.showSettlement = false; render(); return; }
   if (action === 'not-ready') { showToast('其它房间还在长。'); }
+  if (action === 'dev-reset') { await handleDevReset(); return; }
 });
 
 document.addEventListener('keydown', event => {
@@ -406,6 +444,7 @@ async function init() {
   state = await store.update(draft => ensureFocus(draft, currentDate));
   render();
 }
+if (isDevTools) window.ALIVE_DEV = { backup: () => store.backup(), reset: boundary => store.resetUserData(boundary || currentDate) };
 init().catch(error => {
   console.error('ALIVE V4 runtime failed to initialize', error);
   app.innerHTML = `<div class="runtime-error" role="alert">Room Zero 暂时没有加载好，请刷新。</div>`;

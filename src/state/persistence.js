@@ -2,6 +2,7 @@ const DB_NAME = 'alive-v4-clean-room';
 const DB_VERSION = 1;
 const DB_STORE = 'app';
 const FALLBACK_KEY = 'alive-v4-clean-room-fallback';
+const BACKUP_FALLBACK_KEY = 'alive-v4-clean-room-backup';
 
 function nowIso() { return new Date().toISOString(); }
 function localDateKey(date = new Date(), timezone) {
@@ -10,6 +11,42 @@ function localDateKey(date = new Date(), timezone) {
   return `${values.year}-${values.month}-${values.day}`;
 }
 function clone(value) { return typeof structuredClone === 'function' ? structuredClone(value) : JSON.parse(JSON.stringify(value)); }
+
+export function createStateBackup(state, exportedAt = nowIso()) {
+  return {
+    format: 'alive-v4-state-backup-v1',
+    exportedAt,
+    timezone: state?.timezone || 'Asia/Shanghai',
+    state: clone(state)
+  };
+}
+
+export function createCleanStartState(input, cleanStartDate = null) {
+  const now = nowIso();
+  const source = input || {};
+  const preserved = Object.fromEntries(Object.entries(source).filter(([key]) => !['events', 'records', 'world', 'dailyProjections', 'dailySummaries', 'summaries', 'updatedAt'].includes(key)));
+  return {
+    ...preserved,
+    schemaVersion: 2,
+    userId: source.userId || 'local-user',
+    timezone: source.timezone || 'Asia/Shanghai',
+    events: [],
+    records: [],
+    world: {
+      roomStage: 'room', plantStage: 'stage_01', eggStage: 'stage_01', outsideStage: 'blank',
+      plantGrowth: 0, eggGrowth: 0, outsideGrowth: 0, lifeSeeds: 0, seedJarStage: 'empty',
+      airState: 'clear', smokeBeastRelationship: 'unknown', firstSmokeEncountered: false,
+      lastSmokeAt: null, lastSleepStart: null, restState: 'day',
+      lastSettlementId: null, lastRevealedChangeId: null, changedAt: now
+    },
+    meta: {
+      ...(source.meta || {}),
+      cleanStartBoundary: cleanStartDate || null,
+      cleanStartResetAt: cleanStartDate ? now : null
+    },
+    updatedAt: now
+  };
+}
 
 function previewSeed(timezone) {
   const now = nowIso();
@@ -77,7 +114,8 @@ function openDb() {
   });
 }
 
-export function createStore(timezone) {
+export function createStore(timezone, options = {}) {
+  const seedDemo = options.seedDemo !== false;
   let db = null;
   let memory = null;
 
@@ -89,7 +127,7 @@ export function createStore(timezone) {
       db = null;
       try { memory = JSON.parse(localStorage.getItem(FALLBACK_KEY) || 'null'); } catch (ignored) { memory = null; }
     }
-    if (!memory || ![1, 2].includes(memory.schemaVersion)) memory = previewSeed(timezone);
+    if (!memory || ![1, 2].includes(memory.schemaVersion)) memory = seedDemo ? previewSeed(timezone) : createCleanStartState({ timezone }, null);
     else if (memory.schemaVersion !== 2) memory = migrateState(memory, timezone);
     if (!memory.timezone) memory.timezone = timezone;
     return clone(memory);
@@ -124,13 +162,42 @@ export function createStore(timezone) {
     try { localStorage.setItem(FALLBACK_KEY, JSON.stringify(memory)); } catch (ignored) {}
   }
 
+  async function saveBackup(backup) {
+    if (db) {
+      try {
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction(DB_STORE, 'readwrite');
+          tx.objectStore(DB_STORE).put({ id: 'backup:last', payload: backup, savedAt: nowIso() });
+          tx.oncomplete = resolve;
+          tx.onerror = () => reject(tx.error);
+        });
+        return backup;
+      } catch (error) { /* fallback below */ }
+    }
+    try { localStorage.setItem(BACKUP_FALLBACK_KEY, JSON.stringify(backup)); } catch (ignored) {}
+    return backup;
+  }
+
+  async function backup() {
+    const result = createStateBackup(memory);
+    await saveBackup(result);
+    return clone(result);
+  }
+
+  async function resetUserData(cleanStartDate = null) {
+    const savedBackup = await backup();
+    const next = createCleanStartState(memory, cleanStartDate);
+    const savedState = await save(next);
+    return { backup: savedBackup, state: savedState };
+  }
+
   async function update(mutator) {
     const next = clone(memory);
     await mutator(next);
     return save(next);
   }
 
-  return { init, get: async () => clone(memory), save, update, isIndexedDb: () => Boolean(db) };
+  return { init, get: async () => clone(memory), save, update, backup, resetUserData, isIndexedDb: () => Boolean(db) };
 }
 
 export function upsertRecord(state, record) {

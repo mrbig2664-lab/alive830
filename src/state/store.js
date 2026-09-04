@@ -1,1 +1,8 @@
-export { createStore, upsertRecord, getRecord, createId } from './persistence.js';
+export {
+  createStore,
+  upsertRecord,
+  getRecord,
+  createId,
+  createStateBackup,
+  createCleanStartState
+} from './persistence.js';

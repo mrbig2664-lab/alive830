@@ -10,13 +10,13 @@ globalThis.localStorage = {
   clear() { values.clear(); }
 };
 
-const { createStore, getRecord } = await import('../src/state/store.js');
+const { createStore, createCleanStartState, createStateBackup, getRecord } = await import('../src/state/store.js');
 const {
   TIMEZONE, activeLifeEvents, correctLifeEvent, createLifeEvent, createSmokeCorrection, createSmokeEvent,
   deriveDailySummary, deleteLifeEvent, exerciseMinutes, getDailySummaries, latestLifeEvent,
   localDateKey, localDateTimeToIso, monthDayLabel, shiftLocalDate, smokeCount, smokeHistory
 } = await import('../src/state/domain.js');
-const { MAX_VISIBLE_RESIDENTS, ROOM_RESIDENT_ANCHORS, placeResidents } = await import('../src/data/residents.js');
+const { MAX_VISIBLE_RESIDENTS, ROOM_RESIDENT_ANCHORS, RESIDENT_CLASSES, placeResidents, placementAudit } = await import('../src/data/residents.js');
 
 const DATE = '2026-08-30';
 
@@ -85,8 +85,67 @@ test('resident placement uses unique semantic anchors and an explicit visible li
   assert.equal(placed.length, MAX_VISIBLE_RESIDENTS);
   assert.equal(new Set(placed.map(resident => resident.anchor)).size, placed.length);
   assert.ok(placed.every(resident => ROOM_RESIDENT_ANCHORS.some(anchor => anchor.id === resident.anchor)));
-  assert.equal(placed[0].anchor, 'resident_rug_back_left');
-  assert.equal(placed[1].anchor, 'resident_rug_back_right');
+  assert.equal(placed[0].anchor, 'rug_back_right');
+  assert.equal(placed[1].anchor, 'table_side');
+  assert.ok(placed.every(resident => resident.residentClass === RESIDENT_CLASSES.VISITOR));
+});
+
+test('resident placement rejects overcrowding and keeps core residents out of visitor anchors', () => {
+  const candidates = [
+    { id: 'liver', residentClass: RESIDENT_CLASSES.VISITOR },
+    { id: 'muscle', residentClass: RESIDENT_CLASSES.VISITOR },
+    { id: 'moon', residentClass: RESIDENT_CLASSES.VISITOR },
+    { id: 'water', residentClass: RESIDENT_CLASSES.VISITOR },
+    { id: 'zhanzhan', residentClass: RESIDENT_CLASSES.CORE }
+  ];
+  const audit = placementAudit(candidates);
+  assert.equal(audit.eligible, 5);
+  assert.equal(audit.placed, 2);
+  assert.equal(audit.skipped, 3);
+  assert.equal(audit.overcrowded, false);
+  assert.deepEqual(audit.anchors, ['rug_back_right', 'table_side']);
+});
+
+test('clean start preserves app configuration, creates a backup, and clears user data only', () => {
+  const source = {
+    schemaVersion: 2, userId: 'local-user', timezone: TIMEZONE,
+    appConfig: { version: 'v4' }, assetRegistry: { room: 'locked' },
+    events: [{ id: 'test-smoke', type: 'smoke' }], records: [{ key: 'settlement:test', type: 'settlement' }],
+    world: { plantStage: 'stage_04', eggStage: 'stage_03', lifeSeeds: 9 }, meta: { note: 'preserve' }
+  };
+  const backup = createStateBackup(source, '2026-09-04T00:00:00.000Z');
+  const clean = createCleanStartState(source, '2026-09-04');
+  assert.equal(backup.format, 'alive-v4-state-backup-v1');
+  assert.equal(backup.state.events.length, 1);
+  assert.deepEqual(clean.events, []);
+  assert.deepEqual(clean.records, []);
+  assert.equal(clean.world.plantStage, 'stage_01');
+  assert.equal(clean.world.lifeSeeds, 0);
+  assert.deepEqual(clean.appConfig, source.appConfig);
+  assert.deepEqual(clean.assetRegistry, source.assetRegistry);
+  assert.equal(clean.meta.cleanStartBoundary, '2026-09-04');
+});
+
+test('production store initializes clean without demo seed while preserving schema', async () => {
+  const store = createStore(TIMEZONE, { seedDemo: false });
+  const state = await store.init();
+  assert.equal(state.schemaVersion, 2);
+  assert.equal(state.events.filter(event => event.source === 'previewSeed').length, 0);
+});
+
+test('store reset writes a backup before clearing user data and records the boundary only as metadata', async () => {
+  const store = createStore(TIMEZONE, { seedDemo: false });
+  await store.init();
+  await store.update(state => {
+    state.events.push({ id: 'old-event', type: 'drink', localDate: '2026-09-03', tombstone: false });
+    state.appConfig = { unchanged: true };
+  });
+  const result = await store.resetUserData('2026-09-04');
+  assert.equal(result.backup.state.events[0].id, 'old-event');
+  assert.deepEqual(result.state.events, []);
+  assert.equal(result.state.meta.cleanStartBoundary, '2026-09-04');
+  assert.deepEqual(result.state.appConfig, { unchanged: true });
+  assert.equal(result.state.timezone, TIMEZONE);
 });
 
 test('repeatable events survive a store reload', async () => {

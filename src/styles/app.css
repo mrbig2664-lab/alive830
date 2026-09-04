@@ -169,14 +169,17 @@ img { max-width: 100%; }
 .secondary-action .secondary-plus { margin-right: 10px; font-family: var(--font-display); }
 
 /* Interactive integration layer: hidden until a real flow is opened, so the Visual Master stays unchanged. */
-.room-companion { right: 3%; bottom: 10%; z-index: 7; width: 13%; max-height: 24%; object-fit: contain; }
-.room-companion-liver { right: 13%; bottom: 11%; width: 11%; }
-.room-companion-muscle { right: 24%; bottom: 10%; width: 14%; }
-.room-companion-water { right: 4%; bottom: 10%; width: 9%; }
-.room-anchor-resident_rug_back_left { left: 56%; right: auto; bottom: 10%; width: 11%; }
-.room-anchor-resident_rug_back_right { right: 4%; bottom: 10%; width: 10%; }
-.room-anchor-resident_bedside { left: 25%; right: auto; bottom: 10%; width: 10%; }
-.room-anchor-resident_table { right: 13%; bottom: 11%; width: 11%; }
+.room-companion { z-index: 1; max-height: 24%; object-fit: contain; }
+.room-companion-liver { width: 11%; }
+.room-companion-muscle { width: 14%; }
+.room-companion-moon { width: 10%; }
+.room-companion-water { width: 9%; }
+.room-anchor-rug_back_left { left: 66%; right: auto; bottom: 17%; width: 10%; z-index: 1; }
+.room-anchor-rug_back_center { left: 76%; right: auto; bottom: 17%; width: 10%; z-index: 1; }
+.room-anchor-rug_back_right { right: 4%; bottom: 17%; width: 9%; z-index: 1; }
+.room-anchor-table_side { right: 16%; bottom: 36%; width: 9%; z-index: 3; }
+.room-anchor-bed_side { left: 22%; right: auto; bottom: 20%; width: 9%; z-index: 1; }
+.room-anchor-window_side { right: 27%; top: 28%; width: 8%; z-index: 3; }
 .is-reacting { animation: resident-reaction .55s ease-in-out 2; transform-origin: bottom center; }
 @keyframes resident-reaction { 50% { transform: translateY(-5px) scale(1.05); } }
 .smoke-history-list { display: grid; gap: 10px; margin: 20px 0 0; padding: 0; list-style: none; }
@@ -203,6 +206,9 @@ img { max-width: 100%; }
 .nurture-target small { grid-column: 2; color: var(--muted); }
 .interaction-toast { position: fixed; z-index: 90; left: 50%; bottom: 28px; display: flex; align-items: center; gap: 16px; max-width: calc(100vw - 32px); transform: translateX(-50%); padding: 14px 20px; color: var(--paper); background: var(--ink); border: 5px solid transparent; border-image: url('../../public/assets/material/frame-cta-black.png') 20 fill / 5px / 0 stretch; font-size: 22px; font-weight: 900; box-shadow: var(--soft-shadow); }
 .interaction-toast button { padding: 6px 12px; color: var(--ink); border: 2px solid var(--paper); background: var(--yellow); font-weight: 900; }
+.dev-tools-panel { position: fixed; z-index: 95; right: 14px; bottom: 14px; display: grid; gap: 8px; width: min(300px, calc(100vw - 28px)); padding: 12px; color: var(--paper); background: var(--ink); border: 4px solid var(--yellow); box-shadow: var(--soft-shadow); font-size: 14px; }
+.dev-tools-panel button { padding: 9px 12px; color: var(--ink); background: var(--yellow); border: 0; font-weight: 900; }
+.dev-tools-panel small { color: #f6ebd4; line-height: 1.35; }
 .mood.is-selected .mood-face { filter: drop-shadow(0 0 0 var(--ink)) drop-shadow(0 0 8px var(--yellow)); transform: scale(1.08); }
 
 .date-link { padding: 0; border: 0; background: transparent; color: var(--muted); font-weight: 800; text-decoration: none; }
