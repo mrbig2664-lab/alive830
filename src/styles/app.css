@@ -1000,3 +1000,91 @@ body[data-experience="real"] .app-viewport[data-mode="unfolded"] .nav-icon {
   width: clamp(24px, 2.8vw, 40px);
   height: clamp(24px, 2.8vw, 40px);
 }
+
+/* Records / Trends / Me are scrollable product surfaces. Home keeps the
+ * existing first-screen contract above; these pages share its paper language
+ * without changing any Home geometry. */
+body[data-experience="real"] .app-page {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  padding: clamp(18px, 3vw, 42px) clamp(16px, 4vw, 64px) 0;
+  background: var(--paper);
+  background-image: url('../../public/assets/material/texture-paper.png'), url('../../public/assets/material/grain-overlay.png');
+  background-size: 812px 540px, 314px 146px;
+  background-blend-mode: multiply;
+}
+.app-page .page-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; padding-bottom: 28px; }
+.app-page > .bottom-nav { flex: 0 0 clamp(78px, 13dvh, 144px); height: auto; min-height: 0; margin: 0 calc(clamp(16px, 4vw, 64px) * -1); }
+.app-page > .bottom-nav .nav-item { min-height: 0; }
+.page-header { display: flex; justify-content: space-between; align-items: end; gap: 20px; padding: 0 0 18px; border-bottom: 8px solid transparent; border-image: url('../../public/assets/material/divider-handdrawn.png') 8 stretch; }
+.page-kicker { display: block; color: var(--muted); font-family: var(--font-display); font-size: clamp(12px, 2vw, 18px); letter-spacing: .1em; }
+.page-header h1 { margin: 4px 0 0; font-family: var(--font-display); font-size: clamp(44px, 8vw, 76px); line-height: .9; }
+.page-arrows { display: flex; gap: 8px; }
+.page-arrows button, .range-toggle button { min-width: 54px; min-height: 48px; padding: 8px 14px; border: 5px solid transparent; border-image: url('../../public/assets/material/frame-button-secondary.png') 20 fill / 5px / 0 stretch; background: transparent; font-weight: 950; }
+.page-arrows button:hover, .range-toggle button.is-selected { background: var(--yellow); }
+.records-day-strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; margin: 20px 0 12px; }
+.records-day { min-width: 0; min-height: 72px; padding: 8px 4px; border: 6px solid transparent; border-image: url('../../public/assets/material/frame-button-secondary.png') 20 fill / 6px / 0 stretch; background: transparent; }
+.records-day b, .records-day small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.records-day b { font-size: clamp(18px, 3.2vw, 28px); }
+.records-day small { margin-top: 5px; color: var(--muted); font-size: clamp(12px, 2vw, 17px); font-weight: 850; }
+.records-day.is-today { color: var(--paper); background: var(--ink); border-image-source: url('../../public/assets/material/frame-label-black.png'); }
+.records-day.is-today small { color: var(--yellow); }
+.records-day.is-selected:not(.is-today) { background: var(--yellow); }
+.records-selected-date { margin: 0 0 16px; color: var(--muted); font-size: clamp(18px, 3vw, 27px); font-weight: 900; }
+.records-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.records-section { min-width: 0; padding: 20px 22px; border: 8px solid transparent; border-image: url('../../public/assets/material/frame-panel.png') 24 fill / 8px / 0 stretch; background: rgba(247,240,223,.7); }
+.records-section-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-bottom: 4px solid rgba(17,17,17,.18); padding-bottom: 10px; }
+.records-section-heading h2 { margin: 0; font-size: clamp(24px, 4.5vw, 38px); }
+.records-section-heading h2 span { margin-right: 8px; }
+.records-section-heading > strong { color: var(--muted); font-size: clamp(16px, 2.7vw, 24px); }
+.records-count { display: flex; align-items: baseline; gap: 8px; margin: 10px 0 3px; }
+.records-count b { font-family: var(--font-display); font-size: clamp(48px, 8vw, 72px); line-height: .9; }
+.records-count span { font-size: clamp(20px, 3vw, 28px); font-weight: 900; }
+.records-total { margin: 12px 0 6px; font-family: var(--font-display); font-size: clamp(30px, 5vw, 46px); }
+.smoke-metrics { display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--muted); font-size: clamp(14px, 2.2vw, 20px); font-weight: 800; }
+.smoke-metrics b { color: var(--ink); }
+.records-event-list { display: grid; gap: 0; margin: 8px 0 0; padding: 0; list-style: none; }
+.records-section .history-event-row { min-height: 48px; }
+.records-section .history-event-row b { font-size: clamp(16px, 2.6vw, 23px); }
+.records-section .history-event-row small { font-size: clamp(14px, 2.2vw, 19px); }
+.records-section .history-more { min-width: 42px; min-height: 38px; font-size: 26px; }
+.records-empty { margin: 12px 0 4px; color: var(--muted); font-size: clamp(16px, 2.5vw, 21px); font-weight: 750; }
+.records-checkin { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 50px; }
+.records-checkin b { font-size: clamp(18px, 2.8vw, 26px); }
+.records-checkin span { flex: 1; color: var(--muted); font-size: clamp(14px, 2.2vw, 19px); }
+.records-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 18px; margin: 18px 2px 0; color: var(--muted); font-size: clamp(14px, 2vw, 18px); font-weight: 800; }
+.range-toggle { display: flex; gap: 6px; }
+.page-intro { margin: 18px 0; color: var(--muted); font-size: clamp(17px, 2.8vw, 25px); font-weight: 800; }
+.trend-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.trend-card, .noticed-card, .me-card { min-width: 0; padding: 20px 22px; border: 8px solid transparent; border-image: url('../../public/assets/material/frame-panel.png') 24 fill / 8px / 0 stretch; background: rgba(247,240,223,.7); }
+.trend-card-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.trend-card-heading h2 { margin: 0; font-size: clamp(24px, 4vw, 36px); }
+.trend-card-heading h2 span { margin-right: 8px; }
+.trend-card-heading > strong { font-family: var(--font-display); font-size: clamp(25px, 4.2vw, 40px); white-space: nowrap; }
+.trend-bars { display: grid; gap: 8px; margin-top: 18px; }
+.trend-bar-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 8px; font-size: clamp(12px, 1.8vw, 16px); font-weight: 850; }
+.trend-bar-row i { display: block; height: 16px; background: rgba(17,17,17,.12); }
+.trend-bar-row i b { display: block; height: 100%; min-width: 3px; background: var(--green); }
+.trend-card:nth-child(2) .trend-bar-row i b { background: var(--orange); }
+.trend-card:nth-child(3) .trend-bar-row i b { background: var(--yellow); }
+.trend-card:nth-child(4) .trend-bar-row i b { background: var(--blue); }
+.trend-bar-row strong { min-width: 38px; text-align: right; }
+.trend-card p, .noticed-card p, .me-card p { margin: 14px 0 0; color: var(--muted); font-size: clamp(15px, 2.3vw, 21px); font-weight: 750; }
+.noticed-card { margin-top: 16px; }
+.noticed-card h2, .me-card h2 { margin: 6px 0 0; font-size: clamp(25px, 4.5vw, 38px); }
+.me-card { margin-top: 16px; }
+.me-goal { display: flex; justify-content: space-between; gap: 12px; padding: 16px 0; border-bottom: 2px solid rgba(17,17,17,.18); font-size: clamp(18px, 3vw, 27px); font-weight: 900; }
+.me-goal:last-of-type { border-bottom: 0; }
+.me-disabled { width: 100%; margin-top: 16px; padding: 14px; border: 5px solid transparent; border-image: url('../../public/assets/material/frame-button-secondary.png') 20 fill / 5px / 0 stretch; background: transparent; color: var(--muted); font-size: clamp(16px, 2.6vw, 22px); font-weight: 850; }
+
+@media (max-width: 680px) {
+  body[data-experience="real"] .app-page { padding: 14px 12px 0; }
+  .records-grid, .trend-grid { grid-template-columns: 1fr; gap: 12px; }
+  .records-section, .trend-card, .noticed-card, .me-card { padding: 15px 16px; border-width: 6px; }
+  .app-page > .bottom-nav { margin: 0 -12px; }
+  .app-page > .bottom-nav .nav-item { font-size: clamp(15px, 4.5vw, 20px); }
+  .app-page > .bottom-nav .nav-icon { width: clamp(28px, 7vw, 38px); height: clamp(28px, 7vw, 38px); }
+}

@@ -1,4 +1,5 @@
 import { scene } from '../data/scene.js';
+import { monthDayLabel } from '../state/domain.js';
 
 const action = (id) => scene.actions.find((item) => item.id === id);
 
@@ -110,13 +111,14 @@ function unfoldedDisplay({ records, smokeEncountered, target, mood, seedBalance,
   return `<div class="unfolded-display"><div class="unfolded-room">${roomScene({ smokeEncountered, reaction, plantAsset, eggAsset, residents })}</div>${statusPanel(records, target, mood, seedBalance, todayLabel)}${quickRecordBar(records)}</div>`;
 }
 
-function bottomNav() {
-  return `<nav class="bottom-nav" aria-label="主导航"><button class="nav-item is-active" data-action="home" type="button"><img class="nav-icon" src="${scene.assets.navHouse}" alt=""><span class="nav-label">房间</span></button><button class="nav-item" data-action="not-ready" type="button"><img class="nav-icon" src="${scene.assets.navSearch}" alt=""><span class="nav-label">发现</span></button><button class="nav-item" data-action="not-ready" type="button"><img class="nav-icon" src="${scene.assets.navBook}" alt=""><span class="nav-label">故事</span></button><button class="nav-item" data-action="not-ready" type="button"><img class="nav-icon" src="${scene.assets.navPerson}" alt=""><span class="nav-label">我的</span></button></nav>`;
+function bottomNav(activePage = 'home') {
+  const item = (page, asset, label, alt) => `<button class="nav-item ${activePage === page ? 'is-active' : ''}" data-action="${page}" type="button" aria-current="${activePage === page ? 'page' : 'false'}"><img class="nav-icon" src="${asset}" alt="${alt}"><span class="nav-label">${label}</span></button>`;
+  return `<nav class="bottom-nav" aria-label="主导航">${item('home', scene.assets.navHouse, '房间', '房间')}${item('records', scene.assets.navCalendar, '记录', '记录')}${item('trends', scene.assets.navTrend, '趋势', '趋势')}${item('me', scene.assets.navPerson, '我的', '我的')}</nav>`;
 }
 
 export function renderShell({ mode, records, smokeEncountered, target = 10, mood = null, seedBalance = 0, todayLabel = '—', reaction = null, plantAsset = scene.assets.plant, eggAsset = scene.assets.egg, residents = [] }) {
   const display = mode === 'folded' ? foldedDisplay({ records, smokeEncountered, target, reaction, plantAsset, eggAsset }) : unfoldedDisplay({ records, smokeEncountered, target, mood, seedBalance, todayLabel, reaction, plantAsset, eggAsset, residents });
-  return `<div class="app-stage" data-mode="${mode}"><header class="brand-header"><div class="brand-lockup"><div class="brand-title">${scene.title}</div><div class="brand-subtitle">${scene.room} <span>·</span> DAILY LOOP</div></div><div class="brand-note">${note(scene.tagline, 'header-note')}<img src="${scene.assets.heart}" alt="" aria-hidden="true"></div><div class="mode-tabs" aria-label="掌机模式"><button data-mode-choice="folded" class="${mode === 'folded' ? 'is-active' : ''}" type="button">FOLDED<br><small>折叠行动</small></button><button data-mode-choice="unfolded" class="${mode === 'unfolded' ? 'is-active' : ''}" type="button">UNFOLDED<br><small>展开世界</small></button></div></header><section class="loop-strip"><span>LIVE</span><b>→</b><span>NOTICE</span><b>→</b><span>CHANGE</span><b>→</b><span>RETURN</span><img src="${scene.assets.heart}" alt="" aria-hidden="true"></section><section class="handheld-shell"><div class="screen-bezel" data-screen-mode="${mode}" aria-label="${mode === 'folded' ? '折叠封面屏' : '展开主屏'}">${display}${mode === 'unfolded' ? bottomNav() : ''}</div></section><footer class="footer-caption"><span>把自己，养回来。</span><small>ALIVE V4 · ROOM ZERO · ONE SMALL THING AT A TIME</small></footer></div>`;
+  return `<div class="app-stage" data-mode="${mode}"><header class="brand-header"><div class="brand-lockup"><div class="brand-title">${scene.title}</div><div class="brand-subtitle">${scene.room} <span>·</span> DAILY LOOP</div></div><div class="brand-note">${note(scene.tagline, 'header-note')}<img src="${scene.assets.heart}" alt="" aria-hidden="true"></div><div class="mode-tabs" aria-label="掌机模式"><button data-mode-choice="folded" class="${mode === 'folded' ? 'is-active' : ''}" type="button">FOLDED<br><small>折叠行动</small></button><button data-mode-choice="unfolded" class="${mode === 'unfolded' ? 'is-active' : ''}" type="button">UNFOLDED<br><small>展开世界</small></button></div></header><section class="loop-strip"><span>LIVE</span><b>→</b><span>NOTICE</span><b>→</b><span>CHANGE</span><b>→</b><span>RETURN</span><img src="${scene.assets.heart}" alt="" aria-hidden="true"></section><section class="handheld-shell"><div class="screen-bezel" data-screen-mode="${mode}" aria-label="${mode === 'folded' ? '折叠封面屏' : '展开主屏'}">${display}${mode === 'unfolded' ? bottomNav('home') : ''}</div></section><footer class="footer-caption"><span>把自己，养回来。</span><small>ALIVE V4 · ROOM ZERO · ONE SMALL THING AT A TIME</small></footer></div>`;
 }
 
 // The production app intentionally contains only the approved screen UI. The
@@ -126,4 +128,69 @@ export function renderAppViewport({ mode, records, smokeEncountered, target = 10
     ? foldedDisplay({ records, smokeEncountered, target, reaction, plantAsset, eggAsset })
     : unfoldedDisplay({ records, smokeEncountered, target, mood, seedBalance, todayLabel, reaction, plantAsset, eggAsset, residents });
   return `<main class="app-viewport" data-experience="real" data-mode="${mode}" data-screen-mode="${mode}" aria-label="${mode === 'folded' ? '折叠行动模式' : '展开世界模式'}">${display}${mode === 'unfolded' ? bottomNav() : ''}</main>`;
+}
+
+function dateHeading(date, todayDate) {
+  return `${monthDayLabel(date)} · ${date === todayDate ? '今天' : '当天'}`;
+}
+
+function recordsEventRows(events, makeRow) {
+  return events.length ? events.map(makeRow).join('') : '<p class="records-empty">未记录</p>';
+}
+
+function averageSmokeInterval(events) {
+  const times = events.map(event => Date.parse(event.occurredAt || event.createdAt)).filter(Number.isFinite).sort((a, b) => a - b);
+  if (times.length < 2) return '—';
+  const average = Math.round(times.slice(1).reduce((sum, time, index) => sum + time - times[index], 0) / (times.length - 1) / 60000);
+  if (average < 60) return `${average}m`;
+  return `${Math.floor(average / 60)}h${String(average % 60).padStart(2, '0')}m`;
+}
+
+function recordSection(title, icon, content, value = '') {
+  return `<section class="records-section"><div class="records-section-heading"><h2><span>${icon}</span>${title}</h2>${value ? `<strong>${value}</strong>` : ''}</div>${content}</section>`;
+}
+
+export function renderRecordsViewport({ mode, selectedDate, todayDate, dateOptions = [], summary }) {
+  const dates = dateOptions.map(item => `<button type="button" class="records-day ${item.date === selectedDate ? 'is-selected' : ''} ${item.date === todayDate ? 'is-today' : ''}" data-action="history-day" data-date="${item.date}"><b>${item.label.replace('月', '/').replace('日', '')}</b><small>${item.weekday}</small></button>`).join('');
+  const smokeRows = recordsEventRows(summary.smokeEvents, (event, index) => historyEventRow({ id: event.id, label: `第${index + 1}支`, time: event.time || '—' }));
+  const drinkRows = recordsEventRows(summary.drinkEvents, (event, index) => historyEventRow({ id: event.id || event.key, kind: event.id ? 'event' : 'record', label: `第${index + 1}杯`, time: event.time || '—', detail: `${event.quantity || 1}杯` }));
+  const exerciseRows = recordsEventRows(summary.exerciseSessions, event => historyEventRow({ id: event.id || event.key, kind: event.id ? 'event' : 'record', label: '运动', time: event.time || '—', detail: `${event.durationMinutes || 0} min` }));
+  const waterRows = recordsEventRows(summary.waterEvents, (event, index) => historyEventRow({ id: event.id || event.key, kind: event.id ? 'event' : 'record', label: `第${index + 1}杯`, time: event.time || '—', detail: `${event.quantity || 1}杯` }));
+  const sleepRows = summary.sleep ? historyEventRow({ id: summary.sleep.id || summary.sleep.key, kind: summary.sleep.id ? 'event' : 'record', label: '准备睡', time: summary.sleep.time || summary.sleep.bedtime || '—', detail: '上床' }) : '<p class="records-empty">未记录</p>';
+  const checkinRows = summary.checkIn ? `<div class="records-checkin"><b>${summary.mood === 'good' ? '🙂 好' : summary.mood === 'okay' ? '😐 一般' : summary.mood === 'bad' ? '☹️ 不好' : '已记录'}</b><span>${summary.checkIn.food || '身体状态已记录'}</span><button class="history-more" data-action="event-menu" data-target-id="${summary.checkIn.id || summary.checkIn.key}" data-target-kind="record" aria-label="修改身体状态">⋯</button></div>` : '<p class="records-empty">未记录</p>';
+  const smokeMetrics = summary.smokeEvents.length ? `<div class="smoke-metrics"><span>第一支 <b>${summary.smokeEvents[0].time || '—'}</b></span><span>最近一支 <b>${summary.smokeEvents.at(-1).time || '—'}</b></span><span>平均间隔 <b>${averageSmokeInterval(summary.smokeEvents)}</b></span></div>` : '';
+  const meta = `<div class="records-meta"><span>🌱 ${summary.seeds ? `${summary.seeds.earned} 赚得 · ${summary.seeds.used} 已用` : '暂无种子记录'}</span><span>结算：${summary.settlement?.status || '未结算'}</span></div>`;
+  return `<main class="app-viewport app-page records-page" data-experience="real" data-mode="${mode}" data-page="records" aria-label="生活记录"><div class="page-scroll"><header class="page-header"><div><span class="page-kicker">MY LIFE · 生活日记</span><h1>记录</h1></div><div class="page-arrows"><button data-action="history-prev" type="button" aria-label="更早七天">←</button><button data-action="history-next" type="button" aria-label="更新七天">→</button></div></header><div class="records-day-strip">${dates}</div><div class="records-selected-date">${dateHeading(selectedDate, todayDate)}</div><div class="records-grid">${recordSection('抽烟', '🚬', `<div class="records-count"><b>${summary.smokeCount}</b><span>支</span></div>${smokeMetrics}<ol class="records-event-list">${smokeRows}</ol>`, `${summary.smokeCount}支`)}${recordSection('喝酒', '🍷', `<div class="records-total">${summary.drinkCount ? `${summary.drinkCount} 杯` : 'Dry'}</div><ul class="records-event-list">${drinkRows}</ul>`, `${summary.drinkCount}杯`)}${recordSection('运动', '💪', `<div class="records-total">${summary.exerciseMinutes ? `${summary.exerciseMinutes} min` : '—'}</div><ul class="records-event-list">${exerciseRows}</ul>`, `${summary.exerciseMinutes}min`)}${recordSection('喝水', '💧', `<div class="records-total">${summary.waterCount} / 8 杯</div><ul class="records-event-list">${waterRows}</ul>`, `${summary.waterCount}/8`)}${recordSection('睡眠', '🌙', `<ul class="records-event-list">${sleepRows}</ul>`)}${recordSection('身体状态', '🙂', `<div class="records-event-list">${checkinRows}</div>`)} </div>${meta}</div>${bottomNav('records')}</main>`;
+}
+
+function trendBar(value, max, label, suffix = '') {
+  const width = max > 0 ? Math.max(3, Math.round((Number(value || 0) / max) * 100)) : 3;
+  return `<div class="trend-bar-row"><span>${label}</span><i><b style="width:${width}%"></b></i><strong>${value || '—'}${value ? suffix : ''}</strong></div>`;
+}
+
+function trendMetric(title, icon, summaryRows, value, note) {
+  return `<section class="trend-card"><div class="trend-card-heading"><h2><span>${icon}</span>${title}</h2><strong>${value}</strong></div><div class="trend-bars">${summaryRows}</div><p>${note}</p></section>`;
+}
+
+export function renderTrendsViewport({ mode, range = 7, summaries = [], observation = '目前还没有足够记录形成观察。' }) {
+  const dates = summaries.map(summary => summary.date.slice(5).replace('-', '/'));
+  const maxSmoke = Math.max(...summaries.map(item => item.smokeCount), 1);
+  const maxDrink = Math.max(...summaries.map(item => item.drinkCount), 1);
+  const maxExercise = Math.max(...summaries.map(item => item.exerciseMinutes), 1);
+  const maxWater = Math.max(...summaries.map(item => item.waterCount), 1);
+  const compact = summaries.map((item, index) => ({ ...item, label: dates[index] })).slice(-range);
+  const smokeBars = compact.map(item => trendBar(item.smokeCount, maxSmoke, item.label, '支')).join('');
+  const drinkBars = compact.map(item => trendBar(item.drinkCount, maxDrink, item.label, '杯')).join('');
+  const exerciseBars = compact.map(item => trendBar(item.exerciseMinutes, maxExercise, item.label, 'm')).join('');
+  const waterBars = compact.map(item => trendBar(item.waterCount, maxWater, item.label, '杯')).join('');
+  const smokeDays = compact.filter(item => item.smokeCount > 0);
+  const firstTimes = smokeDays.map(item => item.smokeEvents?.[0]?.time).filter(Boolean);
+  const dryDays = compact.filter(item => item.drinkCount === 0).length;
+  const activeDays = compact.filter(item => item.exerciseMinutes > 0).length;
+  const firstSmoke = firstTimes.length ? firstTimes[0] : '—';
+  return `<main class="app-viewport app-page trends-page" data-experience="real" data-mode="${mode}" data-page="trends" aria-label="生活趋势"><div class="page-scroll"><header class="page-header"><div><span class="page-kicker">UNDERSTAND · 看见变化</span><h1>趋势</h1></div><div class="range-toggle" role="group" aria-label="趋势范围"><button class="${range === 7 ? 'is-selected' : ''}" data-action="trend-range" data-range="7" type="button">7天</button><button class="${range === 30 ? 'is-selected' : ''}" data-action="trend-range" data-range="30" type="button">30天</button></div></header><p class="page-intro">记录 → 理解 → 改变。只看真实发生的事。</p><div class="trend-grid">${trendMetric('抽烟', '🚬', smokeBars, smokeDays.length ? `${(smokeDays.reduce((sum, item) => sum + item.smokeCount, 0) / smokeDays.length).toFixed(1)} 支/天` : '—', `第一支烟 ${firstSmoke} · ${smokeDays.length} 个有记录日`)}${trendMetric('喝酒', '🍷', drinkBars, compact.some(item => item.drinkCount > 0) ? `${(compact.reduce((sum, item) => sum + item.drinkCount, 0) / range).toFixed(1)} 杯/天` : 'Dry', `${dryDays} 个 Dry Day`)}${trendMetric('运动', '💪', exerciseBars, activeDays ? `${compact.reduce((sum, item) => sum + item.exerciseMinutes, 0)} min` : '—', `${activeDays} 个运动日`)}${trendMetric('喝水', '💧', waterBars, compact.some(item => item.waterCount > 0) ? `${(compact.reduce((sum, item) => sum + item.waterCount, 0) / range).toFixed(1)} 杯/天` : '—', '每日目标 8 杯')}</div><section class="noticed-card"><span class="page-kicker">ONE THING I NOTICED</span><h2>我发现一件事。</h2><p>${observation}</p></section></div>${bottomNav('trends')}</main>`;
+}
+
+export function renderMeViewport({ mode, smokeTarget = 10, waterTarget = 8, recordedDays = 0 }) {
+  return `<main class="app-viewport app-page me-page" data-experience="real" data-mode="${mode}" data-page="me" aria-label="我的"><div class="page-scroll"><header class="page-header"><div><span class="page-kicker">LONG TERM · 慢慢来</span><h1>我的</h1></div></header><p class="page-intro">照顾今天，也照顾以后。</p><section class="me-card"><h2>我的目标</h2><div class="me-goal"><span>🚬 抽烟</span><strong>≤ ${smokeTarget} 支 / 天</strong></div><div class="me-goal"><span>💧 喝水</span><strong>${waterTarget} 杯 / 天</strong></div></section><section class="me-card"><h2>数据</h2><div class="me-goal"><span>已经记录</span><strong>${recordedDays} 天</strong></div><button class="me-disabled" type="button" disabled>导出数据 · 即将支持</button></section><section class="me-card"><h2>关于 ALIVE</h2><p>把真实生活记下来，让变化有迹可循。</p></section></div>${bottomNav('me')}</main>`;
 }

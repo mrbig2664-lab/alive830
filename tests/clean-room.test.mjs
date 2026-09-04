@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { access, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { renderAppViewport, renderShell } from '../src/layout/shell.js';
+import { renderAppViewport, renderMeViewport, renderRecordsViewport, renderShell, renderTrendsViewport } from '../src/layout/shell.js';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 
@@ -24,6 +24,9 @@ test('real app route is shell-free while QA route keeps the presentation shell',
   assert.match(real, /class="app-viewport"/);
   assert.match(real, /data-experience="real"/);
   assert.match(real, /class="bottom-nav"/);
+  assert.match(real, /记录/);
+  assert.match(real, /趋势/);
+  assert.match(real, /我的/);
   assert.doesNotMatch(real, /app-stage|handheld-shell|brand-header|mode-tabs|loop-strip/);
 
   const app = await readFile(join(root, 'src/app.js'), 'utf8');
@@ -61,6 +64,8 @@ test('first-screen layout and approved assets are present', async () => {
     'ui/nav-search.svg',
     'ui/nav-book.svg',
     'ui/nav-person.svg',
+    'ui/nav-calendar.svg',
+    'ui/nav-trend.svg',
   ]) {
     await access(join(root, 'public/assets', asset));
   }
@@ -133,4 +138,30 @@ test('render contract keeps the handheld loop visible', () => {
   assert.match(folded, /secondary-plus/);
   assert.doesNotMatch(folded, /folded-actions/);
   assert.doesNotMatch(folded, /class="bottom-nav"/);
+});
+
+test('records, trends and me surfaces render as real IA pages', () => {
+  const summary = {
+    date: '2026-09-03', smokeCount: 2, smokeEvents: [{ id: 's1', time: '09:08' }, { id: 's2', time: '10:41' }],
+    drinkCount: 1, drinkEvents: [{ id: 'd1', time: '20:14', quantity: 1 }],
+    exerciseMinutes: 45, exerciseSessions: [{ id: 'e1', time: '07:30', durationMinutes: 45 }],
+    waterCount: 2, waterEvents: [{ id: 'w1', time: '08:00', quantity: 1 }, { id: 'w2', time: '12:00', quantity: 1 }],
+    sleep: null, checkIn: null, mood: null, seeds: null, settlement: null,
+  };
+  const records = renderRecordsViewport({ mode: 'unfolded', selectedDate: '2026-09-03', todayDate: '2026-09-03', dateOptions: [], summary });
+  assert.match(records, /data-page="records"/);
+  assert.match(records, /第1支/);
+  assert.match(records, /data-action="event-menu"/);
+  assert.match(records, /data-action="records"/);
+
+  const trends = renderTrendsViewport({ mode: 'unfolded', range: 7, summaries: [summary], observation: '过去7天，你有1个 Dry Day。' });
+  assert.match(trends, /data-page="trends"/);
+  assert.match(trends, /7天/);
+  assert.match(trends, /30天/);
+  assert.match(trends, /我发现一件事/);
+
+  const me = renderMeViewport({ mode: 'folded', smokeTarget: 10, waterTarget: 8, recordedDays: 2 });
+  assert.match(me, /data-page="me"/);
+  assert.match(me, /我的目标/);
+  assert.match(me, /data-action="trends"/);
 });

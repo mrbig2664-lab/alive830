@@ -1,10 +1,10 @@
-import { dailyHistorySheet, eventEditSheet, eventMenuSheet, renderAppViewport, renderShell, smokeHistoryDrawer } from './layout/shell.js';
+import { dailyHistorySheet, eventEditSheet, eventMenuSheet, renderAppViewport, renderMeViewport, renderRecordsViewport, renderShell, renderTrendsViewport, smokeHistoryDrawer } from './layout/shell.js';
 import { createStore, getRecord, upsertRecord } from './state/store.js';
 import {
   TIMEZONE, activeLifeEvents, allocateLifeSeed, currentCheckin, currentEncounter, currentFocus,
   currentSeedLedger, currentSettlement, createLifeEvent, createSmokeCorrection, createSmokeEvent,
   correctLifeEvent, dailySeedReward, deriveAir, ensureDailySeeds, ensureFirstEncounter, ensureFocus, finalizeLifeSeeds,
-  deriveDailySummary, isDemoSource, localDateKey, localDateTimeToIso, localTime, monthDayLabel, dateLabel, settlementSummary,
+  deriveDailySummary, getDailySummaries, isDemoSource, localDateKey, localDateTimeToIso, localTime, monthDayLabel, dateLabel, settlementSummary,
   shiftLocalDate
 } from './state/domain.js';
 import { scene } from './data/scene.js';
@@ -20,7 +20,7 @@ const detectPosture = () => (window.innerWidth / Math.max(window.innerHeight, 1)
 let mode = queryMode === 'folded' || queryMode === 'unfolded' ? queryMode : detectPosture();
 let state = null;
 let currentDate = localDateKey(new Date(), TIMEZONE);
-let ui = { sheet: null, draft: null, showSettlement: false, undoTargetId: null, toast: null, reaction: null, historyDate: null, editTargetId: null, editTargetKind: null };
+let ui = { page: 'home', sheet: null, draft: null, showSettlement: false, undoTargetId: null, toast: null, reaction: null, historyDate: null, historyWindowEnd: null, trendRange: 7, editTargetId: null, editTargetKind: null, editReturnPage: 'home' };
 let toastTimer;
 let undoTimer;
 let reactionTimer;
@@ -88,12 +88,53 @@ function historyViewModel() {
     waterEvents: raw.waterEvents.map(withTime),
     sleep: raw.sleep ? withTime(raw.sleep) : null,
   };
+  const windowEnd = ui.historyWindowEnd || currentDate;
   const dateOptions = Array.from({ length: 7 }, (_, index) => {
-    const date = shiftLocalDate(currentDate, index - 6);
+    const date = shiftLocalDate(windowEnd, index - 6);
     const label = monthDayLabel(date, TIMEZONE);
     return { date, label, weekday: dateLabel(date, TIMEZONE).replace(label, '').trim() };
   });
-  return { selectedDate, todayDate: currentDate, dateOptions, summary };
+  return { selectedDate, todayDate: currentDate, dateOptions, summary, windowEnd };
+}
+
+function pageHistoryModel() {
+  return historyViewModel();
+}
+
+function trendViewModel() {
+  const range = ui.trendRange === 30 ? 30 : 7;
+  const end = currentDate;
+  const start = shiftLocalDate(end, 1 - range);
+  const summaries = getDailySummaries(state, start, end).map(summary => ({
+    ...summary,
+    smokeEvents: summary.smokeEvents.map(event => ({ ...event, time: localTime(event.occurredAt || event.createdAt, TIMEZONE) }))
+  }));
+  const smokeDays = summaries.filter(item => item.smokeCount > 0);
+  const lateFirstSmokeDays = smokeDays.filter(item => Number(item.smokeEvents[0]?.time?.split(':')[0]) >= 10).length;
+  const drinkDays = summaries.filter(item => item.drinkCount > 0).length;
+  const dryDays = summaries.filter(item => item.drinkCount === 0).length;
+  const activeDays = summaries.filter(item => item.exerciseMinutes > 0).length;
+  const observation = lateFirstSmokeDays > 0
+    ? `过去${range}天，你有${lateFirstSmokeDays}天第一支烟晚于10点。`
+    : drinkDays > 0
+      ? `过去${range}天，你有${dryDays}个 Dry Day。`
+      : activeDays > 0
+        ? `过去${range}天运动了${activeDays}天，共${summaries.reduce((sum, item) => sum + item.exerciseMinutes, 0)}分钟。`
+        : '目前还没有足够记录形成观察。';
+  return { range, summaries, observation };
+}
+
+function recordedDayCount() {
+  return new Set([...state.events, ...state.records]
+    .filter(item => item.localDate && !item.tombstone && !isDemoSource(item))
+    .map(item => item.localDate)).size;
+}
+
+function renderPage() {
+  if (ui.page === 'records') return renderRecordsViewport({ mode, ...pageHistoryModel() });
+  if (ui.page === 'trends') return renderTrendsViewport({ mode, ...trendViewModel() });
+  if (ui.page === 'me') return renderMeViewport({ mode, smokeTarget: Number(focus().target || 10), waterTarget: 8, recordedDays: recordedDayCount() });
+  return renderAppViewport(viewModel());
 }
 
 function correctionTarget() {
@@ -159,7 +200,7 @@ function interactionLayer() {
 function render() {
   if (!state) return;
   document.body.dataset.experience = isQaDemo ? 'qa' : 'real';
-  app.innerHTML = (isQaDemo ? renderShell(viewModel()) : renderAppViewport(viewModel())) + interactionLayer();
+  app.innerHTML = (isQaDemo ? renderShell(viewModel()) : renderPage()) + interactionLayer();
 }
 
 async function updateState(mutator) {
@@ -222,7 +263,7 @@ async function handleDeleteEvent(targetId, targetKind) {
   const targetDate = correctionTarget()?.localDate || ui.historyDate || currentDate;
   await updateState(draft => correctLifeEvent(draft, targetId, { deleted: true }));
   ui.historyDate = targetDate;
-  ui.sheet = 'daily-history';
+  ui.sheet = ui.editReturnPage === 'records' ? null : 'daily-history';
   showToast('这条记录已移出当天统计。');
 }
 
@@ -243,14 +284,14 @@ async function handleSaveEvent(targetId, targetKind) {
   const mood = field('mood');
   if (mood) changes.mood = mood;
   if (target.type === 'sleep_start' || target.type === 'sleepLog') changes.bedtime = time || target.bedtime;
-  if (!Object.keys(changes).length) { ui.sheet = 'daily-history'; render(); return; }
+  if (!Object.keys(changes).length) { ui.sheet = ui.editReturnPage === 'records' ? null : 'daily-history'; render(); return; }
   const targetDate = target.localDate || ui.historyDate || currentDate;
   await updateState(draft => {
     correctLifeEvent(draft, targetId, changes);
     if (targetDate === currentDate) draft.world.airState = deriveAir(draft, currentDate);
   });
   ui.historyDate = targetDate;
-  ui.sheet = 'daily-history';
+  ui.sheet = ui.editReturnPage === 'records' ? null : 'daily-history';
   showToast('记录已更新，统计也同步了。');
 }
 
@@ -301,8 +342,10 @@ document.addEventListener('click', async event => {
   if (action === 'undo') { await handleUndo(); return; }
   if (action === 'smoke-history') { ui.sheet = 'smoke-history'; ui.showSettlement = false; render(); return; }
   if (action === 'daily-history') { ui.historyDate = currentDate; ui.sheet = 'daily-history'; ui.showSettlement = false; render(); return; }
-  if (action === 'history-day') { ui.historyDate = button.dataset.date; ui.sheet = 'daily-history'; render(); return; }
-  if (action === 'event-menu') { ui.editTargetId = button.dataset.targetId; ui.editTargetKind = button.dataset.targetKind || 'event'; ui.sheet = 'event-menu'; render(); return; }
+  if (action === 'history-day') { ui.historyDate = button.dataset.date; ui.sheet = ui.page === 'records' ? null : 'daily-history'; render(); return; }
+  if (action === 'history-prev' || action === 'history-next') { const delta = action === 'history-prev' ? -7 : 7; ui.historyWindowEnd = shiftLocalDate(ui.historyWindowEnd || currentDate, delta); ui.historyDate = ui.historyWindowEnd; render(); return; }
+  if (action === 'trend-range') { ui.trendRange = Number(button.dataset.range) === 30 ? 30 : 7; render(); return; }
+  if (action === 'event-menu') { ui.editTargetId = button.dataset.targetId; ui.editTargetKind = button.dataset.targetKind || 'event'; ui.editReturnPage = ui.page; ui.sheet = 'event-menu'; render(); return; }
   if (action === 'open-event-edit') { ui.sheet = 'event-edit'; render(); return; }
   if (action === 'delete-event') { await handleDeleteEvent(button.dataset.targetId, button.dataset.targetKind || 'event'); return; }
   if (action === 'save-event') { await handleSaveEvent(button.dataset.targetId, button.dataset.targetKind || 'event'); return; }
@@ -316,7 +359,16 @@ document.addEventListener('click', async event => {
   if (action === 'set-mood') { await handleMood(button.dataset.mood); return; }
   if (action === 'nurture') { await handleNurture(button.dataset.target); return; }
   if (action === 'finish-nurture') { await finishNurture(); return; }
-  if (action === 'home' || action === 'close-sheet' || action === 'close-settlement') { ui.sheet = null; ui.draft = null; ui.showSettlement = false; render(); return; }
+  if (action === 'home' || action === 'records' || action === 'trends' || action === 'me') {
+    ui.page = action;
+    ui.sheet = null;
+    ui.draft = null;
+    ui.showSettlement = false;
+    if (action === 'records') { ui.historyDate = currentDate; ui.historyWindowEnd = currentDate; }
+    render();
+    return;
+  }
+  if (action === 'close-sheet' || action === 'close-settlement') { ui.sheet = null; ui.draft = null; ui.showSettlement = false; render(); return; }
   if (action === 'not-ready') { showToast('其它房间还在长。'); }
 });
 

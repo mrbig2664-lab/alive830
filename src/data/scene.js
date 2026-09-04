@@ -29,6 +29,8 @@ export const scene = {
     moodOkay: './public/assets/ui/mood-okay.svg',
     moodBad: './public/assets/ui/mood-bad.svg',
     navHouse: './public/assets/ui/nav-house.svg',
+    navCalendar: './public/assets/ui/nav-calendar.svg',
+    navTrend: './public/assets/ui/nav-trend.svg',
     navSearch: './public/assets/ui/nav-search.svg',
     navBook: './public/assets/ui/nav-book.svg',
     navPerson: './public/assets/ui/nav-person.svg',
